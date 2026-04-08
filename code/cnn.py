@@ -28,7 +28,6 @@ class ConvBlock(nn.Module):
 class DementiaCNN(nn.Module):
     """
     Args:
-      n_icd_codes  : size of the multi-hot ICD vector
       hidden_ch    : channels in the shared conv block after concatenation (default 128)
       icd_dim      : ICD embedding output size (default 64)
       dropout      : dropout probability (default 0.3)
@@ -36,7 +35,6 @@ class DementiaCNN(nn.Module):
 
     def __init__(
         self,
-        n_icd_codes: int = 200,
         hidden_ch:   int = 128,
         icd_dim:     int = 64,
         dropout:     float = 0.3,
@@ -53,7 +51,7 @@ class DementiaCNN(nn.Module):
         self.gap = nn.AdaptiveAvgPool1d(1)
 
         self.icd_embed = nn.Sequential(
-            nn.Linear(n_icd_codes, icd_dim * 2),
+            nn.Linear(128, icd_dim * 2),
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(icd_dim * 2, icd_dim),
@@ -106,7 +104,6 @@ def build_cnn(meta: dict, **kwargs) -> DementiaCNN:
     """
     return DementiaCNN(
         n_vitals    = meta["n_vitals"],
-        n_icd_codes = meta["n_icd_codes"],
         **kwargs,
     )
 

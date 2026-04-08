@@ -1,24 +1,3 @@
-"""
-data_loader.py
-==============
-MIMIC-IV preprocessing pipeline for dementia risk prediction.
-
-Inputs:
-  - chartevents.csv  (ICU vitals time-series)
-  - diagnoses_icd.csv (ICD-10 codes per admission)
-  - patients.csv      (demographics)
-
-Outputs:
-  - PyTorch DataLoaders containing:
-      vitals : (batch, SEQ_LEN, N_VITALS)  — padded/truncated vital sequences
-      icd    : (batch, N_ICD_CODES)         — multi-hot ICD code vector
-      label  : (batch,)                     — 1 = dementia (F03/F01/F02), 0 = control
-
-Usage:
-  from data_loader import get_dataloaders
-  train_loader, val_loader, test_loader, meta = get_dataloaders()
-"""
-
 import os
 import numpy as np
 import pandas as pd
@@ -63,10 +42,6 @@ VITAL_BOUNDS = {
 }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Step 1 — Identify positive & negative subject IDs
-# ─────────────────────────────────────────────────────────────────────────────
-
 def get_subject_labels(diagnoses_path: str) -> pd.DataFrame:
     """
     Returns a DataFrame with columns [subject_id, label].
@@ -76,15 +51,12 @@ def get_subject_labels(diagnoses_path: str) -> pd.DataFrame:
     print("Loading diagnoses...")
     df = pd.read_csv(diagnoses_path, usecols=["subject_id", "icd_code"])
 
-    # Positive subjects
     mask = df["icd_code"].str.startswith(DEMENTIA_CODES, na=False)
     positive_ids = df.loc[mask, "subject_id"].unique()
 
-    # Negative subjects (no dementia code at all)
     all_ids = df["subject_id"].unique()
     negative_ids = np.setdiff1d(all_ids, positive_ids)
 
-    # Downsample negatives to match positives (balanced dataset)
     rng = np.random.default_rng(SEED)
     n_pos = len(positive_ids)
     negative_ids = rng.choice(negative_ids, size=min(n_pos, len(negative_ids)), replace=False)
@@ -97,32 +69,6 @@ def get_subject_labels(diagnoses_path: str) -> pd.DataFrame:
     print(f"  Negatives (controls): {len(negative_ids):,}")
     return labels
 
-
-def build_icd_matrix(diagnoses_path: str, subject_ids: np.ndarray):
-    """
-    Returns:
-      icd_matrix : np.ndarray of shape (n_subjects, n_codes)
-      mlb        : fitted MultiLabelBinarizer (for decoding)
-    """
-    print("Building ICD multi-hot matrix...")
-    df = pd.read_csv(diagnoses_path, usecols=["subject_id", "icd_code"])
-    df = df[df["subject_id"].isin(subject_ids)]
-
-    # Group all codes per patient
-    grouped = df.groupby("subject_id")["icd_code"].apply(list).reset_index()
-    grouped = grouped.set_index("subject_id").reindex(subject_ids).fillna("").reset_index()
-    grouped["icd_code"] = grouped["icd_code"].apply(
-        lambda x: x if isinstance(x, list) else []
-    )
-
-    # Use top-N most frequent codes to keep dimensionality manageable
-    all_codes = [c for codes in grouped["icd_code"] for c in codes]
-    top_codes = pd.Series(all_codes).value_counts().head(200).index.tolist()
-
-    mlb = MultiLabelBinarizer(classes=top_codes)
-    icd_matrix = mlb.fit_transform(grouped["icd_code"])
-    print(f"  ICD matrix shape: {icd_matrix.shape}")
-    return icd_matrix, mlb
 
 
 def build_vitals_matrix(chartevents_path: str, subject_ids: np.ndarray) -> np.ndarray:
@@ -225,19 +171,12 @@ def get_dataloaders(batch_size: int = 64, val_size: float = 0.15, test_size: flo
       train_loader, val_loader, test_loader, meta = get_dataloaders()
       n_icd = meta["n_icd_codes"]   # pass to model constructors
     """
-    # 1. Labels
     label_df = get_subject_labels(DIAGNOSES_PATH)
     subject_ids = label_df["subject_id"].values
     labels      = label_df["label"].values
 
-    # 2. ICD multi-hot matrix
-    icd_matrix, mlb = build_icd_matrix(DIAGNOSES_PATH, subject_ids)
-    n_icd_codes = icd_matrix.shape[1]
-
-    # 3. Vitals time-series
     vitals_matrix = build_vitals_matrix(CHARTEVENTS_PATH, subject_ids)
 
-    # 4. Train / val / test split (stratified)
     idx = np.arange(len(labels))
     idx_train, idx_tmp, y_train, y_tmp = train_test_split(
         idx, labels, test_size=val_size + test_size, stratify=labels, random_state=SEED
@@ -250,7 +189,6 @@ def get_dataloaders(batch_size: int = 64, val_size: float = 0.15, test_size: flo
     def make_loader(indices, shuffle):
         ds = DementiaDataset(
             vitals_matrix[indices],
-            icd_matrix[indices],
             labels[indices],
         )
         return DataLoader(ds, batch_size=batch_size, shuffle=shuffle, num_workers=2, pin_memory=True)
@@ -260,10 +198,8 @@ def get_dataloaders(batch_size: int = 64, val_size: float = 0.15, test_size: flo
     test_loader  = make_loader(idx_test,  shuffle=False)
 
     meta = {
-        "n_icd_codes": n_icd_codes,
         "seq_len":     SEQ_LEN,
         "n_vitals":    N_VITALS,
-        "mlb":         mlb,
         "label_df":    label_df,
     }
 

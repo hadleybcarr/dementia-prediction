@@ -46,7 +46,6 @@ class DementiaBiLSTM(nn.Module):
 
     Args:
       n_vitals     : number of vital sign channels (default 6)
-      n_icd_codes  : size of the multi-hot ICD vector
       hidden_dim   : LSTM hidden size per direction (default 128; full BiLSTM = 256)
       n_layers     : number of stacked LSTM layers (default 3)
       icd_dim      : ICD embedding output size (default 64)
@@ -56,7 +55,6 @@ class DementiaBiLSTM(nn.Module):
     def __init__(
         self,
         n_vitals:    int = 6,
-        n_icd_codes: int = 200,
         hidden_dim:  int = 128,
         n_layers:    int = 3,
         icd_dim:     int = 64,
@@ -89,7 +87,7 @@ class DementiaBiLSTM(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
         self.icd_embed = nn.Sequential(
-            nn.Linear(n_icd_codes, icd_dim * 2),
+            nn.Linear(128, icd_dim * 2),
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(icd_dim * 2, icd_dim),

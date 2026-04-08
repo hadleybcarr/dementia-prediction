@@ -53,12 +53,10 @@ class DementiaTransformer(nn.Module):
 
     Args:
       n_vitals     : number of vital sign channels (default 6)
-      n_icd_codes  : size of the multi-hot ICD vector
       d_model      : internal embedding dimension (default 128)
       n_heads      : number of attention heads (default 8)
       n_layers     : number of encoder layers (default 4)
       dim_ff       : feed-forward hidden size (default 256)
-      icd_dim      : ICD embedding output size (default 64)
       dropout      : dropout probability (default 0.1)
       seq_len      : sequence length — used for positional encoding (default 48)
     """
@@ -66,7 +64,6 @@ class DementiaTransformer(nn.Module):
     def __init__(
         self,
         n_vitals:    int = 6,
-        n_icd_codes: int = 200,
         d_model:     int = 128,
         n_heads:     int = 8,
         n_layers:    int = 4,
@@ -98,7 +95,7 @@ class DementiaTransformer(nn.Module):
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=n_layers)
 
         self.icd_embed = nn.Sequential(
-            nn.Linear(n_icd_codes, icd_dim * 2),
+            nn.Linear(d_model, d_model * 2),
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(icd_dim * 2, icd_dim),
