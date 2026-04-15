@@ -38,12 +38,37 @@ refresh_token = tokens["refresh_token"]
 
 # Step 3: Use the access token to make API calls
 headers = {"Authorization": f"Bearer {access_token}"}
-sleep_data = requests.get(
-    "https://api.ouraring.com/v2/usercollection/sleep",
+heart_rate = requests.get(
+    "https://api.ouraring.com/v2/usercollection/heartrate",
     headers=headers,
-    params={"start_date": "2023-01-01", "end_date": "2023-01-07"}
+    params={"start_datetime": "2023-01-01", "end_datetime": "2023-01-07"}
 )
-print(json.dumps(sleep_data.json(), indent=2))
+print(json.dumps(heart_rate.json(), indent=2))
+
+blood_oxygen = requests.get(
+    "https://api.ouraring.com/v2/usercollection/daily_spo2",
+    headers = headers,
+    params = {}
+)
+
+print(json.dumps(blood_oxygen.json(), indent=2))
+
+vo2_max = requests.get(
+    "https://api.ouraring.com/v2/usercollection/v02_max",
+    headers = headers,
+    params = {}
+)
+
+print(json.dumps(vo2_max.json(), indent=2))
+
+hrv = requests.get(
+    "https://api.ouraring.com/v2/usercollection/interbeat_interval",
+    headers = headers, 
+    params = {}
+)
+print(json.dumps(hrv.json(), indent=2))
+
+
 
 # Step 4: Refresh the token when it expires
 def refresh_access_token(refresh_token):
