@@ -149,16 +149,15 @@ def build_vitals_matrix(chartevents_path: str, subject_ids: np.ndarray) -> np.nd
 
 
 class DementiaDataset(Dataset):
-    def __init__(self, vitals: np.ndarray, icd: np.ndarray, labels: np.ndarray):
+    def __init__(self, vitals: np.ndarray, labels: np.ndarray):
         self.vitals  = torch.tensor(vitals,  dtype=torch.float32)
-        self.icd     = torch.tensor(icd,     dtype=torch.float32)
         self.labels  = torch.tensor(labels,  dtype=torch.float32)
 
     def __len__(self):
         return len(self.labels)
 
     def __getitem__(self, idx):
-        return self.vitals[idx], self.icd[idx], self.labels[idx]
+        return self.vitals[idx], self.labels[idx]
 
 
 def get_dataloaders(batch_size: int = 64, val_size: float = 0.15, test_size: float = 0.15):
@@ -209,7 +208,6 @@ def get_dataloaders(batch_size: int = 64, val_size: float = 0.15, test_size: flo
 
 if __name__ == "__main__":
     train_loader, val_loader, test_loader, meta = get_dataloaders()
-    vitals, icd, labels = next(iter(train_loader))
-    print(f"Batch vitals shape : {vitals.shape}")    # (64, 48, 6)
-    print(f"Batch ICD shape    : {icd.shape}")       # (64, 200)
+    vitals, labels = next(iter(train_loader))
+    print(f"Batch vitals shape : {vitals.shape}")    # (64, 48, 6)    # (64, 200)
     print(f"Batch labels shape : {labels.shape}")    # (64,)
