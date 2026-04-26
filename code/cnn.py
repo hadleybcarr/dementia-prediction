@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-
 class ConvBlock(nn.Module):
 
     def __init__(self, in_ch: int, out_ch: int, kernel: int, stride: int = 1, residual: bool = False):
@@ -21,7 +20,6 @@ class ConvBlock(nn.Module):
             res = self.proj(x) if self.proj is not None else x
             out = out + res
         return out
-
 
 
 
@@ -77,12 +75,6 @@ class DementiaCNN(nn.Module):
         x = vitals.permute(0, 2, 1)             # (B, n_vitals, T)
 
 
-        # Align lengths (branches may differ by 1 due to padding/pooling)
-        min_len = min(s.size(2), m.size(2), l.size(2))
-        x = torch.cat([s[:, :, :min_len],
-                        m[:, :, :min_len],
-                        l[:, :, :min_len]], dim=1)   # (B, 3*branch_ch, T')
-
         x = self.conv(x)                  # (B, hidden_ch, T')
         x = self.gap(x).squeeze(-1)              # (B, hidden_ch)
 
@@ -108,7 +100,7 @@ def build_cnn(meta: dict, **kwargs) -> DementiaCNN:
     )
 
 
-if __name__ == "__main__":
+def train():
     model = DementiaCNN(n_vitals=6, n_icd_codes=200)
     print(model)
     total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
