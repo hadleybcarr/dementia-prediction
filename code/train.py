@@ -23,6 +23,7 @@ def get_model(model_name: str, meta: dict) -> nn.Module:
     if model_name == "transformer":
         return build_transformer(meta)
     elif model_name == "cnn":
+        print("Building CNN...")
         return build_cnn(meta)
     elif model_name in ("bilstm", "bi-lstm", "bi_lstm"):
         return build_bilstm(meta)
@@ -33,6 +34,7 @@ def get_model(model_name: str, meta: dict) -> nn.Module:
 
 
 def run_epoch(model, loader, criterion, optimizer=None, device=DEVICE):
+    print("Training", model,"...")
     training = optimizer is not None
     model.train() if training else model.eval()
 
