@@ -35,7 +35,7 @@ echo "============================================"
 # Run from the code directory
 cd "$SLURM_SUBMIT_DIR"
 
-source venv/bin/activate
+source ../venv/bin/activate
 
 # Run training
 uv run python train.py --model "$TASK"
