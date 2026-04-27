@@ -25,9 +25,6 @@
 
 TASK="${1:-cnn}"
 
-module load python/3.9.0
-module load cuda/12.1.1
-
 echo "============================================"
 echo "Job ID:    $SLURM_JOB_ID"
 echo "Task:      $TASK"
