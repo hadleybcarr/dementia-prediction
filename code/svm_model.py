@@ -69,8 +69,6 @@ DEMENTIA_ICD10 = [
 ]
 
 
-
-
 def assemble_features(
     labels:         pd.DataFrame,
     vital_feat:     pd.DataFrame,
