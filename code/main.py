@@ -1,8 +1,7 @@
 import numpy as np
 import torch 
-import matplotlib as plt
+import matplotlib.pyplot as plt
 import argparse
-from cnn import train, test
 import json 
 
 
@@ -29,23 +28,19 @@ if __name__ == "__main__":
         if torch.accelerator.is_available() else "cpu"
     )
     print(args.task)
-    if args.task == 'cnn': 
-          print("Running CNN...")
-    elif args.task == 'bidirectional_lstm':
-            pass
-    elif args.task == 'graph':
+    if args.task == 'graph':
           with open("history.json") as f:
                 h = json.load(f)
-          epochs = range(1, len(h["train_acc"]) + 1)
+          epochs = range(1, len(h["train_loss"]) + 1)
           plt.figure(figsize=(8,5))
-          plt.plot(epochs, h["train_acc"], label="Train accuracy")
-          plt.plot(epochs, h["val_acc"], label="Val acuracy")
+          plt.plot(epochs, h["train_loss"], label="Train Loss")
+          #plt.plot(epochs, h["val_acc"], label="Val acuracy")
           plt.xlabel("Epoch")
           plt.ylabel("Accuracy")
-          plt.title("Dementia CNN Training Curves")
+          plt.title("Dementia CNN Training Loss")
           plt.legend()
           plt.grid(alpha=0.3)
-          plt.savefig("accuracy_curve.png", dpi=150)
+          plt.savefig("train_loss.png", dpi=150)
 
     else:
             pass 

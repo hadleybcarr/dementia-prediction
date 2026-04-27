@@ -197,7 +197,7 @@ def load_model(model_name: str, ckpt_path: str, device=DEVICE) -> tuple:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train a dementia risk model on MIMIC-IV")
     parser.add_argument("--model",      type=str,   default="transformer",
-                        choices=["transformer", "cnn", "bilstm"],
+                        choices=["transformer", "cnn", "bilstm", "svm"],
                         help="Which model architecture to train")
     parser.add_argument("--epochs",     type=int,   default=30)
     parser.add_argument("--lr",         type=float, default=1e-4)

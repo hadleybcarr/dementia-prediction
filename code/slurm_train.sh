@@ -3,7 +3,7 @@
 # ============================================================
 # Usage:
 #   sbatch slurm_train.sh cnn #run cnn
-#   sbatch slurm_train.sh cnn #run transformer
+#   sbatch slurm_train.sh transformer #run transformer
 #   sbatch slurm_train.sh cnn #run svm
 #   sbatch slurm_train.sh cnn #run bi_lstm
 
