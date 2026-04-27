@@ -52,10 +52,10 @@ def get_subject_labels(diagnoses_path: str) -> pd.DataFrame:
     df = pd.read_csv(diagnoses_path, usecols=["subject_id", "icd_code"])
 
     mask = df["icd_code"].str.startswith(DEMENTIA_CODES, na=False)
-    positive_ids = df.loc[mask, "subject_id"].unique()
+    positive_ids = df.loc[mask, "subject_id"].unique() #accesses columbs by labels
 
     all_ids = df["subject_id"].unique()
-    negative_ids = np.setdiff1d(all_ids, positive_ids)
+    negative_ids = np.setdiff1d(all_ids, positive_ids) #numpy function that finds the difference betwen two arrays
 
     rng = np.random.default_rng(SEED)
     n_pos = len(positive_ids)

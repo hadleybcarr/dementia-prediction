@@ -8,12 +8,9 @@ Architecture:
   2. Learnable positional encoding
   3. N × TransformerEncoderLayer (multi-head self-attention + FFN)
   4. [CLS] token pooling
-  5. ICD embedding: Linear(n_icd_codes → icd_dim)
-  6. Concatenate [CLS] + ICD → classifier head → sigmoid
 
 Input:
   vitals : (batch, seq_len, n_vitals)
-  icd    : (batch, n_icd_codes)
 
 Output:
   (batch,) — probability of dementia
@@ -68,7 +65,6 @@ class DementiaTransformer(nn.Module):
         n_heads:     int = 8,
         n_layers:    int = 4,
         dim_ff:      int = 256,
-        icd_dim:     int = 64,
         dropout:     float = 0.1,
         seq_len:     int = 48,
     ):
@@ -94,26 +90,17 @@ class DementiaTransformer(nn.Module):
         )
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=n_layers)
 
-        self.icd_embed = nn.Sequential(
-            nn.Linear(d_model, d_model * 2),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(icd_dim * 2, icd_dim),
-            nn.LayerNorm(icd_dim),
-        )
-
         self.classifier = nn.Sequential(
-            nn.Linear(d_model + icd_dim, 128),
+            nn.Linear(d_model, 128),
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(128, 1),
         )
 
-    def forward(self, vitals: torch.Tensor, icd: torch.Tensor) -> torch.Tensor:
+    def forward(self, vitals: torch.Tensor) -> torch.Tensor:
         """
         Args:
           vitals : (batch, seq_len, n_vitals)
-          icd    : (batch, n_icd_codes)
         Returns:
           logits : (batch,)  — raw scores (apply sigmoid for probabilities)
         """
@@ -135,12 +122,8 @@ class DementiaTransformer(nn.Module):
         # Extract [CLS] representation
         cls_out = x[:, 0, :]                              # (B, d_model)
 
-        # Embed ICD codes
-        icd_out = self.icd_embed(icd)                     # (B, icd_dim)
-
         # Concatenate and classify
-        combined = torch.cat([cls_out, icd_out], dim=-1)  # (B, d_model + icd_dim)
-        logits   = self.classifier(combined).squeeze(-1)  # (B,)
+        logits   = self.classifier(cls_out).squeeze(-1)  # (B,)
         return logits
 
 
@@ -153,20 +136,18 @@ def build_transformer(meta: dict, **kwargs) -> DementiaTransformer:
     """
     return DementiaTransformer(
         n_vitals    = meta["n_vitals"],
-        n_icd_codes = meta["n_icd_codes"],
         seq_len     = meta["seq_len"],
         **kwargs,
     )
 
 
 if __name__ == "__main__":
-    model = DementiaTransformer(n_vitals=6, n_icd_codes=200, seq_len=48)
+    model = DementiaTransformer(n_vitals=6, seq_len=48)
     print(model)
     total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Trainable parameters: {total_params:,}")
 
     vitals = torch.randn(8, 48, 6)
-    icd    = torch.randint(0, 2, (8, 200)).float()
-    out    = model(vitals, icd)
+    out    = model(vitals,)
     print(f"Output shape: {out.shape}")    # (8,)
     print(f"Sample logits: {out[:3].detach()}")

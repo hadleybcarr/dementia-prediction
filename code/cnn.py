@@ -3,111 +3,38 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class ConvBlock(nn.Module):
+class DementiaCNN(nn.Module):
 
-    def __init__(self, in_ch: int, out_ch: int, kernel: int, stride: int = 1, residual: bool = False):
+    def __init__(self, n_features=6, n_timesteps=48):
         super().__init__()
-        pad = kernel // 2
-        self.conv = nn.Conv1d(in_ch, out_ch, kernel_size=kernel, stride=stride, padding=pad, bias=False)
-        self.bn   = nn.BatchNorm1d(out_ch)
-        self.act  = nn.ReLU()
-        self.residual = residual
-        self.proj = nn.Conv1d(in_ch, out_ch, 1, bias=False) if residual and in_ch != out_ch else None
+        self.vital_conv = nn.Sequential(
+            nn.Conv1d(n_features, 32, kernel_size=3, padding=1),
+            nn.BatchNorm1d(32), nn.ReLU(),
+            nn.Conv1d(32,64,kernel_size=3,padding=1),
+            nn.BatchNorm1d(32), nn.ReLU(),
+            nn.Conv1d(64,128, kernel_size=3, padding=1),
+            nn.BatchNorm1d(128), nn.ReLU(),
+            nn.AdaptiveAvgPool1d(1),
+            nn.Flatten(),
+            nn.Dropout(0.25), 
+            nn.Linear(128,1)
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        out = self.act(self.bn(self.conv(x)))
-        if self.residual:
-            res = self.proj(x) if self.proj is not None else x
-            out = out + res
-        return out
+        x = x.permute(0,2,1)
+        return self.vital_conv(x).squeeze(-1)
 
 
+def build_cnn():
+    return DementiaCNN(n_features=6, n_timesteps=48)
 
-class DementiaCNN(nn.Module):
-    """
-    Args:
-      hidden_ch    : channels in the shared conv block after concatenation (default 128)
-      icd_dim      : ICD embedding output size (default 64)
-      dropout      : dropout probability (default 0.3)
-    """
-
-    def __init__(
-        self,
-        hidden_ch:   int = 128,
-        icd_dim:     int = 64,
-        dropout:     float = 0.3,
-    ):
-        super().__init__()
-
-
-        self.conv = nn.Sequential(
-            ConvBlock(128, hidden_ch, kernel=3, residual=True),
-            ConvBlock(hidden_ch, hidden_ch, kernel=3, residual=True),
-            nn.Dropout(dropout),
-        )
-
-        self.gap = nn.AdaptiveAvgPool1d(1)
-
-        self.icd_embed = nn.Sequential(
-            nn.Linear(128, icd_dim * 2),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(icd_dim * 2, icd_dim),
-            nn.LayerNorm(icd_dim),
-        )
-
-        self.classifier = nn.Sequential(
-            nn.Linear(hidden_ch + icd_dim, 128),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(128, 1),
-        )
-
-    def forward(self, vitals: torch.Tensor, icd: torch.Tensor) -> torch.Tensor:
-        """
-        Args:
-          vitals : (batch, seq_len, n_vitals)
-          icd    : (batch, n_icd_codes)
-        Returns:
-          logits : (batch,)
-        """
-        # Conv1d expects (batch, channels, length)
-        x = vitals.permute(0, 2, 1)             # (B, n_vitals, T)
-
-
-        x = self.conv(x)                  # (B, hidden_ch, T')
-        x = self.gap(x).squeeze(-1)              # (B, hidden_ch)
-
-        # ICD embedding
-        icd_out = self.icd_embed(icd)            # (B, icd_dim)
-
-        # Classify
-        combined = torch.cat([x, icd_out], dim=-1)
-        logits   = self.classifier(combined).squeeze(-1)   # (B,)
-        return logits
-
-
-def build_cnn(meta: dict, **kwargs) -> DementiaCNN:
-    """
-    Convenience constructor using metadata returned by get_dataloaders().
-
-    Example:
-      model = build_cnn(meta, branch_ch=64, hidden_ch=128)
-    """
-    return DementiaCNN(
-        n_vitals    = meta["n_vitals"],
-        **kwargs,
-    )
-
-
-def train():
-    model = DementiaCNN(n_vitals=6, n_icd_codes=200)
+if __name__ == "__main__":
+    model = DementiaCNN(n_vitals=6, seq_len=48)
     print(model)
     total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Trainable parameters: {total_params:,}")
 
     vitals = torch.randn(8, 48, 6)
-    icd    = torch.randint(0, 2, (8, 200)).float()
-    out    = model(vitals, icd)
+    out    = model(vitals)
     print(f"Output shape: {out.shape}")    # (8,)
     print(f"Sample logits: {out[:3].detach()}")

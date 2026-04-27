@@ -8,10 +8,11 @@ import torch.nn as nn
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
-from data_loader import get_dataloaders
-from transformer_model import build_transformer
-from cnn_model import build_cnn
-from bilstm_model import build_bilstm
+from data_utils import get_dataloaders
+from transformer import build_transformer
+from cnn import build_cnn
+from bi_lstm import build_bilstm
+from svm_model import build_svm
 
 CHECKPOINT_DIR = Path("./checkpoints")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -25,12 +26,13 @@ def get_model(model_name: str, meta: dict) -> nn.Module:
         return build_cnn(meta)
     elif model_name in ("bilstm", "bi-lstm", "bi_lstm"):
         return build_bilstm(meta)
+    elif model_name in ("svm"):
+        return build_svm(meta)
     else:
         raise ValueError(f"Unknown model '{model_name}'. Choose: transformer | cnn | bilstm")
 
 
 def run_epoch(model, loader, criterion, optimizer=None, device=DEVICE):
-    """Run one epoch. If optimizer is None, runs in eval mode (no grad)."""
     training = optimizer is not None
     model.train() if training else model.eval()
 
@@ -40,12 +42,11 @@ def run_epoch(model, loader, criterion, optimizer=None, device=DEVICE):
 
     ctx = torch.enable_grad() if training else torch.no_grad()
     with ctx:
-        for vitals, icd, labels in loader:
+        for vitals, labels in loader:
             vitals  = vitals.to(device)
-            icd     = icd.to(device)
             labels  = labels.to(device)
 
-            logits = model(vitals, icd)
+            logits = model(vitals)
             loss   = criterion(logits, labels)
 
             if training:
