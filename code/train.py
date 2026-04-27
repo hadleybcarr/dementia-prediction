@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR
+import json 
 
 from data_utils import get_dataloaders
 from transformer import build_transformer
@@ -16,7 +17,6 @@ from svm_model import build_svm
 
 CHECKPOINT_DIR = Path("./checkpoints")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 
 def get_model(model_name: str, meta: dict) -> nn.Module:
     model_name = model_name.lower()
@@ -149,6 +149,8 @@ def train(
                     ckpt_path,
                 )
                 print(f"  ✓ Saved best checkpoint → {ckpt_path}")
+                with open("history.json", "w") as f:
+                    json.dump(history, f)
         else:
             patience_counter += 1
             if patience_counter >= patience:
