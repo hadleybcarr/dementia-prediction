@@ -23,6 +23,10 @@
 
 # Default task if none provided as argument
 
+TASK="${1:-cnn}"
+
+module load python/3.9.0
+module load cuda/12.1.1
 
 echo "============================================"
 echo "Job ID:    $SLURM_JOB_ID"
@@ -34,11 +38,10 @@ echo "============================================"
 
 # Run from the code directory
 cd "$SLURM_SUBMIT_DIR"
-
 source ../venv/bin/activate
 
 # Run training
-uv run python train.py --model "$TASK"
+python train.py --model "$TASK"
 
 echo "============================================"
 echo "Finished:  $(date)"
