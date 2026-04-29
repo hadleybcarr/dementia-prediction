@@ -174,7 +174,7 @@ def get_dataloaders(batch_size: int = 64, val_size: float = 0.15, test_size: flo
     """
     if os.path.exists(CACHE_PATH) and not force_rebuild:
         print(f"Loading cached tensors from {CACHE_PATH}")
-        blob = torch.load(CACHE_PATH)
+        blob = torch.load(CACHE_PATH, weights_only=False)
         idx_train = blob["train"]
         idx_val = blob["val"]
         idx_test = blob["test"]
