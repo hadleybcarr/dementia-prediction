@@ -17,7 +17,7 @@ auth_params = {
     "client_id": CLIENT_ID,
     "redirect_uri": REDIRECT_URI,
     "response_type": "code",
-    "scope": "daily heartrate personal"
+    #"scope": "daily heartrate personal"
 }
 auth_url = f"https://cloud.ouraring.com/oauth/authorize?{urlencode(auth_params)}"
 print(f"Please visit this URL to authorize: {auth_url}")
