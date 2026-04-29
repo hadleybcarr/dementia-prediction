@@ -10,6 +10,7 @@ def pad_to_length(arr, target_len):
 def all_graphs(graph_type:str, graph_title):
     with open("history.json") as f:
         h = json.load(f)
+        print(h)
     
     max_len = max(len(h[m][graph_type] for m in h))
     epochs = range(1, max_len + 1)
@@ -21,7 +22,7 @@ def all_graphs(graph_type:str, graph_title):
             continue
         padded = pad_to_length(values, max_len)
         plt.plot(epochs, padded, label=f"{model.upper()} {graph_title}")
-        
+
     plt.xlabel("Epoch")
     plt.ylabel(graph_title)
     plt.title("All Models "+graph_title)
