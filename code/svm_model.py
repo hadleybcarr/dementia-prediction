@@ -40,7 +40,7 @@ def loader_to_arrays(loader):
 
 def featurize(X):
     N,T,C = X.shape
-    t = np.arage(T, dtype=np.float32) #creates an array of evenly spaced numbers 
+    t = np.arange(T, dtype=np.float32) #creates an array of evenly spaced numbers 
     t_centered = t - t.mean()
     denom = (t_centered ** 2).sum()
 
