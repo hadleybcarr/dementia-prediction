@@ -152,8 +152,8 @@ def build_vitals_matrix(chartevents_path: str, subject_ids: np.ndarray) -> np.nd
 
 class DementiaDataset(Dataset):
     def __init__(self, vitals: np.ndarray, labels: np.ndarray):
-        self.vitals  = torch.tensor(vitals,  dtype=torch.float32)
-        self.labels  = torch.tensor(labels,  dtype=torch.float32)
+        self.vitals  = vitals if isinstance(vitals, torch.Tensor) else torch.tensor(vitals,  dtype=torch.float32)
+        self.labels  = labels if isinstance(labels, torch.Tensor) else torch.tensor(labels,  dtype=torch.float32)
 
     def __len__(self):
         return len(self.labels)
@@ -175,6 +175,8 @@ def get_dataloaders(batch_size: int = 64, val_size: float = 0.15, test_size: flo
     if os.path.exists(CACHE_PATH) and not force_rebuild:
         print(f"Loading cached tensors from {CACHE_PATH}")
         blob = torch.load(CACHE_PATH, weights_only=False)
+        vitals_matrix=blob["vitals"]
+        labels = blob["labels"]
         idx_train = blob["train"]
         idx_val = blob["val"]
         idx_test = blob["test"]
@@ -201,8 +203,11 @@ def get_dataloaders(batch_size: int = 64, val_size: float = 0.15, test_size: flo
             "label_df":    label_df,
         }
 
+
         os.makedirs(os.path.dirname(CACHE_PATH), exist_ok=True)
         torch.save({
+            "vitals": (torch.tensor(vitals_matrix, dtype=torch.float32)),
+            "labels": (torch.tensor(labels, dtype=torch.float32)),
             "train": (idx_train), 
             "val": (idx_val),
             "test": (idx_test),
