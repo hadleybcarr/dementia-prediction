@@ -119,8 +119,7 @@ def train(
     ckpt_path = CHECKPOINT_DIR / f"best_{model_name}.pt"
 
     with open("history.json", "r") as f:
-        json = f.read()
-        history = json[1:-1]
+        history = json.load(f)
     
     best_val_loss = float("inf")
     patience_counter = 0
