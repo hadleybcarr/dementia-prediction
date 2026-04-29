@@ -136,10 +136,10 @@ def train(
 
         scheduler.step()
 
-        history["train_loss"].append(train_loss)
-        history["val_loss"].append(val_loss)
-        history["train_acc"].append(train_acc)
-        history["val_acc"].append(val_acc)
+        history[model_name]["train_loss"].append(train_loss)
+        history[model_name]["val_loss"].append(val_loss)
+        history[model_name]["train_acc"].append(train_acc)
+        history[model_name]["val_acc"].append(val_acc)
 
         elapsed = time.time() - t0
         print(

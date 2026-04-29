@@ -10,7 +10,6 @@ import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
@@ -20,7 +19,7 @@ from sklearn.metrics import (
     roc_auc_score, average_precision_score,
     precision_score, recall_score, f1_score,
     brier_score_loss, roc_curve, precision_recall_curve,
-    ConfusionMatrixDisplay, confusion_matrix, accuracy_score, classification_report
+    ConfusionMatrixDisplay, confusion_matrix, accuracy_score, classification_report, ConfusionMatrixDisplay, RocCurveDisplay
 )
 from sklearn.calibration import CalibratedClassifierCV
 from scipy.stats import loguniform, uniform
@@ -99,8 +98,22 @@ def svm_train(train_loader, test_loader, val_loader):
             acc = accuracy_score(y_test, test_pred)
             area_under_curve = roc_auc_score(y_test, test_probs)
             print(f"Accuracy:{acc}")
+
             print(f"Area under curve:{area_under_curve}")
+            
+            #Graph AUC
+            RocCurveDisplay.from_predictions(y_test,test_probs)
+            plt.title('AUR-ROC')
+            plt.savefig("svm_roc.png")
+
             print("\n Classification Report:")
             print(classification_report(y_test, test_pred, target_names=["control", "dementia"]))
             print("Confusion matrix")
-            print(confusion_matrix(y_test, test_pred))
+            cm = confusion_matrix(y_test, test_pred)
+            print(cm)
+
+            #Graph confusion matrix
+            confusion_matrix_graph = ConfusionMatrixDisplay(cm)
+            confusion_matrix_graph.plot(cmap=plt.cm.Blues)
+            plt.show()
+            plt.savefig("svm_confusion_matrix.png")
