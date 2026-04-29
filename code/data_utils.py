@@ -207,7 +207,8 @@ def get_dataloaders(batch_size: int = 64, val_size: float = 0.15, test_size: flo
             "val": (idx_val),
             "test": (idx_test),
             "meta": meta,
-        })
+        }, CACHE_PATH)
+        print(f"Cached processed tensors → {CACHE_PATH}")
 
     def make_loader(indices, shuffle):
         ds = DementiaDataset(

@@ -71,23 +71,15 @@ export default function VitalsDashboard({
       <style>{styleSheet}</style>
 
       <div className="vd-shell">
-        {/* breadcrumb */}
-        <p className="vd-crumb">
-          Cognitive Health <span className="vd-sep">/</span>{" "}
-          Risk Assessment <span className="vd-sep">/</span>{" "}
-          <em>{arch}</em>
-        </p>
 
         {/* display headline */}
         <h1 className="vd-title">
-          Cognitive&nbsp;<em>V</em>itality &amp; <em>D</em>ementia&nbsp;<em>R</em>isk
+          <em>D</em>ementia&nbsp;<em>R</em>isk
         </h1>
 
-        <p className="vd-subtitle">
-          A multi&#8209;architecture assessment combining biometrics streamed from
-          your <em>Oura ring</em> with deep&#8209;learning models trained on
-          cognitive decline trajectories.
-        </p>
+       <center><p className="vd-subtitle">
+          The models below were trained on data from the MIMIC dataset. The dataset tends to skew towards older patients.
+      </p></center>
 
         {/* hero — risk circle with celestial line motif */}
         <RiskHero score={score} tier={tier} />
@@ -128,24 +120,6 @@ export default function VitalsDashboard({
               <p className="vd-vital-label">{v.label}</p>
             </article>
           ))}
-        </div>
-
-        {/* highlights */}
-        <SectionLabel>Highlights</SectionLabel>
-
-        <div className="vd-highlights">
-          <Highlight title="Top contributor">
-            <em>HRV</em> decline over a 14&#8209;day rolling window is the strongest
-            signal feeding the {arch}.
-          </Highlight>
-          <Highlight title="Trend">
-            Risk score has drifted <em>+0.06</em> over the past month. Sleep
-            continuity is the most actionable lever.
-          </Highlight>
-          <Highlight title="Cross&#8209;model agreement">
-            Variance across CNN, LSTM, Transformer and SVM is low
-            (<em>&sigma;&nbsp;=&nbsp;0.06</em>) — the ensemble strengthens this assessment.
-          </Highlight>
         </div>
 
         <p className="vd-footnote">
