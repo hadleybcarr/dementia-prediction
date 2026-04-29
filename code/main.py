@@ -10,10 +10,9 @@ def pad_to_length(arr, target_len):
 def all_graphs(graph_type:str, graph_title):
     with open("history.json") as f:
         h = json.load(f)
-        print(h)
+        #print(h)
     
-    max_len = max(len(h[m][graph_type] for m in h))
-    epochs = range(1, max_len + 1)
+    epochs = range(1, 30+1)
     plt.figure(figsize=(8,5))
 
     for model in ["cnn", "transformer", "bilstm"]:
