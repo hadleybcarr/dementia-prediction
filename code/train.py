@@ -174,6 +174,12 @@ def train(
     test_loss, test_acc = run_epoch(model, test_loader, criterion, None, DEVICE)
     print(f"\nTest  loss: {test_loss:.4f}  |  Test  acc: {test_acc:.3f}")
 
+    for name, param in model.named_parameters():
+         print(f"{name}: mean={param.mean().item():.4f}, "
+          f"std={param.std().item():.4f}, "
+          f"min={param.min().item():.4f}, "
+          f"max={param.max().item():.4f}")
+
     return {
         "model":      model,
         "history":    history,
