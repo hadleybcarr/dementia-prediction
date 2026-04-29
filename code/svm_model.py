@@ -87,7 +87,7 @@ def svm_train(train_loader, test_loader, val_loader):
                 )),
             ])
             clf.fit(F_train, y_train)
-            val_probs = clf.predict_proba(F_val)[:,]
+            val_probs = clf.predict_proba(F_val)[:,1]
             auc = roc_auc_score(y_val, val_probs)
             print(f" C = {C}, gamma = {gamma}, AUC = {auc:.4}")
             if auc > best["auc"]:
