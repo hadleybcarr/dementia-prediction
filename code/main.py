@@ -7,7 +7,7 @@ import json
 def all_graphs(graph_type:str, graph_title):
     with open("history.json") as f:
         h = json.load(f)
-    epochs = range(1, len(h["cnn"]["train_loss"]) + 1)
+    epochs = range(1, len(h["cnn"][graph_type]) + 1)
     plt.figure(figsize=(8,5))
     plt.plot(epochs, h["cnn"][graph_type], label="CNN"+graph_title)
     plt.plot(epochs, h["transformer"][graph_type], label="Transformer"+graph_title)
