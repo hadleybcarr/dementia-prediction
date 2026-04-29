@@ -163,7 +163,7 @@ def train(
                 )
                 print(f"  ✓ Saved best checkpoint → {ckpt_path}")
                 with open("history.json", "w") as f:
-                    json.dump(history[model_name], f)
+                    json.dump(history, f)
         else:
             patience_counter += 1
             if patience_counter >= patience:
