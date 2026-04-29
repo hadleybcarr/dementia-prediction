@@ -10,8 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "dotenv": "^17.4.2",
+    "pwn": "^0.0.1",
     "react": "^19.2.5",
-    "react-dom": "^19.2.5"
+    "react-dom": "^19.2.5",
+    "requests": "^0.3.0"
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",

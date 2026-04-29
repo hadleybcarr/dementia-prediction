@@ -118,12 +118,9 @@ def train(
     CHECKPOINT_DIR.mkdir(exist_ok=True)
     ckpt_path = CHECKPOINT_DIR / f"best_{model_name}.pt"
 
-    history = {
-        "cnn": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
-        "svm": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
-        "transformer": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
-        "bilstm": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
-        }
+    with open("history.json", "r") as f:
+        json = f.read()
+        history = json[1:-1]
     
     best_val_loss = float("inf")
     patience_counter = 0

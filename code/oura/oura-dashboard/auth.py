@@ -2,11 +2,12 @@ import requests
 import json
 from urllib.parse import urlencode
 import webbrowser
+from pwn import process
 
 # Your OAuth2 application credentials
-CLIENT_ID = process.env.CLIENT_ID
-CLIENT_SECRET = "YOUR_CLIENT_SECRET"
-REDIRECT_URI = "YOUR_REDIRECT_URI"
+CLIENT_ID = process.env.CLIENT_ID 
+CLIENT_SECRET = process.env.CLIENT_SECRET
+REDIRECT_URI = process.env.REDIRECT_URI
 
 # Step 1: Direct user to authorization page
 auth_params = {
