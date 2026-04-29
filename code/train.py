@@ -141,6 +141,8 @@ def train(
         history[model_name]["train_acc"].append(train_acc)
         history[model_name]["val_acc"].append(val_acc)
 
+        print(history)
+
         elapsed = time.time() - t0
         print(
             f"Epoch {epoch:03d}/{epochs}  "
@@ -169,7 +171,7 @@ def train(
                 break
 
     if save_best and ckpt_path.exists():
-        ckpt = torch.load(ckpt_path, map_location=DEVICE)
+        ckpt = torch.load(ckpt_path, map_location=DEVICE, weights_only=False)
         model.load_state_dict(ckpt["model_state"])
         print(f"\nLoaded best checkpoint (epoch {ckpt['epoch']}, val_loss={ckpt['val_loss']:.4f})")
 
@@ -193,7 +195,7 @@ def load_model(model_name: str, ckpt_path: str, device=DEVICE) -> tuple:
     Returns:
       model, meta
     """
-    ckpt  = torch.load(ckpt_path, map_location=device)
+    ckpt  = torch.load(ckpt_path, map_location=device, weights_only=False)
     meta  = ckpt["meta"]
     model = get_model(model_name, meta).to(device)
     model.load_state_dict(ckpt["model_state"])
