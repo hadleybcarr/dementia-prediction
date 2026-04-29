@@ -99,8 +99,8 @@ def train(
 
     train_loader, val_loader, test_loader, meta = get_dataloaders(batch_size=batch_size)
 
-    if model == "svm":
-        svm_train(train_loader, val_loader, test_loader)
+    if model_name == "svm":
+        return svm_train(train_loader, val_loader, test_loader)
 
     model = get_model(model_name, meta).to(DEVICE)
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)

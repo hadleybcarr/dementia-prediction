@@ -18,6 +18,8 @@ N_VITALS   = 6           # number of vital sign channels
 CHUNK_SIZE = 500_000     # rows per chunk when reading chartevents
 SEED       = 42
 
+CACHE_PATH = "/.cache/processed.pt"
+
 # Dementia ICD-10 prefixes (positive class)
 DEMENTIA_CODES = ("F01", "F02", "F03")
 
@@ -160,7 +162,7 @@ class DementiaDataset(Dataset):
         return self.vitals[idx], self.labels[idx]
 
 
-def get_dataloaders(batch_size: int = 64, val_size: float = 0.15, test_size: float = 0.15):
+def get_dataloaders(batch_size: int = 64, val_size: float = 0.15, test_size: float = 0.15, force_rebuild=False):
     """
     Returns:
       train_loader, val_loader, test_loader  : PyTorch DataLoaders
@@ -170,20 +172,42 @@ def get_dataloaders(batch_size: int = 64, val_size: float = 0.15, test_size: flo
       train_loader, val_loader, test_loader, meta = get_dataloaders()
       n_icd = meta["n_icd_codes"]   # pass to model constructors
     """
-    label_df = get_subject_labels(DIAGNOSES_PATH)
-    subject_ids = label_df["subject_id"].values
-    labels      = label_df["label"].values
+    if os.path.exists(CACHE_PATH) and not force_rebuild:
+        print(f"Loading cached tensors from {CACHE_PATH}")
+        blob = torch.load(CACHE_PATH)
+        idx_train = blob["train"]
+        idx_val = blob["val"]
+        idx_test = blob["test"]
+        meta = blob["meta"]
+    else:
+            
+        label_df = get_subject_labels(DIAGNOSES_PATH)
+        subject_ids = label_df["subject_id"].values
+        labels      = label_df["label"].values
+        vitals_matrix = build_vitals_matrix(CHARTEVENTS_PATH, subject_ids)
 
-    vitals_matrix = build_vitals_matrix(CHARTEVENTS_PATH, subject_ids)
+        idx = np.arange(len(labels))
+        idx_train, idx_tmp, y_train, y_tmp = train_test_split(
+            idx, labels, test_size=val_size + test_size, stratify=labels, random_state=SEED
+        )
+        rel_test = test_size / (val_size + test_size)
+        idx_val, idx_test = train_test_split(
+            idx_tmp, test_size=rel_test, stratify=y_tmp, random_state=SEED
+        )
 
-    idx = np.arange(len(labels))
-    idx_train, idx_tmp, y_train, y_tmp = train_test_split(
-        idx, labels, test_size=val_size + test_size, stratify=labels, random_state=SEED
-    )
-    rel_test = test_size / (val_size + test_size)
-    idx_val, idx_test = train_test_split(
-        idx_tmp, test_size=rel_test, stratify=y_tmp, random_state=SEED
-    )
+        meta = {
+            "seq_len":     SEQ_LEN,
+            "n_vitals":    N_VITALS,
+            "label_df":    label_df,
+        }
+
+        os.makedirs(os.path.dirname(CACHE_PATH), exist_ok=True)
+        torch.save({
+            "train": (idx_train), 
+            "val": (idx_val),
+            "test": (idx_test),
+            "meta": meta,
+        })
 
     def make_loader(indices, shuffle):
         ds = DementiaDataset(
@@ -196,11 +220,7 @@ def get_dataloaders(batch_size: int = 64, val_size: float = 0.15, test_size: flo
     val_loader   = make_loader(idx_val,   shuffle=False)
     test_loader  = make_loader(idx_test,  shuffle=False)
 
-    meta = {
-        "seq_len":     SEQ_LEN,
-        "n_vitals":    N_VITALS,
-        "label_df":    label_df,
-    }
+
 
     print(f"\nData splits — Train: {len(idx_train):,} | Val: {len(idx_val):,} | Test: {len(idx_test):,}")
     return train_loader, val_loader, test_loader, meta
