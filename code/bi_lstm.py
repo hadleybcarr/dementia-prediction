@@ -3,7 +3,6 @@ Bidirectional LSTM with temporal attention for dementia risk prediction.
 
 Input:
   vitals : (batch, seq_len, n_vitals)
-  icd    : (batch, n_icd_codes)
 
 Output:
   (batch,) — raw logit (apply sigmoid for probability)
@@ -90,11 +89,10 @@ class DementiaBiLSTM(nn.Module):
             nn.Linear(128, 1),
         )
 
-    def forward(self, vitals: torch.Tensor, icd: torch.Tensor):
+    def forward(self, vitals: torch.Tensor):
         """
         Args:
           vitals : (batch, seq_len, n_vitals)
-          icd    : (batch, n_icd_codes)
         Returns:
           logits : (batch,)
 
@@ -150,7 +148,7 @@ def build_bilstm(meta: dict, **kwargs) -> DementiaBiLSTM:
 
 
 if __name__ == "__main__":
-    model = DementiaBiLSTM(n_vitals=6, n_icd_codes=200)
+    model = DementiaBiLSTM(n_vitals=6)
     print(model)
     total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Trainable parameters: {total_params:,}")

@@ -81,7 +81,7 @@ def train(
     Train a dementia risk model.
 
     Args:
-      model_name  : "transformer", "cnn", or "bilstm"
+      model_name  : "transformer", "cnn", "svm", or "bilstm"
       epochs      : max training epochs
       lr          : learning rate
       batch_size  : mini-batch size
@@ -118,7 +118,13 @@ def train(
     CHECKPOINT_DIR.mkdir(exist_ok=True)
     ckpt_path = CHECKPOINT_DIR / f"best_{model_name}.pt"
 
-    history = {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []}
+    history = {
+        "cnn": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
+        "svm": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
+        "transformer": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
+        "bilstm": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
+        }
+    
     best_val_loss = float("inf")
     patience_counter = 0
 
@@ -155,7 +161,7 @@ def train(
                 )
                 print(f"  ✓ Saved best checkpoint → {ckpt_path}")
                 with open("history.json", "w") as f:
-                    json.dump(history, f)
+                    json.dump(history[model_name], f)
         else:
             patience_counter += 1
             if patience_counter >= patience:
