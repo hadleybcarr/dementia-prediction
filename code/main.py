@@ -4,20 +4,31 @@ import matplotlib.pyplot as plt
 import argparse
 import json 
 
+def pad_to_length(arr, target_len):
+    return arr + [np.nan] * (target_len - len(arr))
+
 def all_graphs(graph_type:str, graph_title):
     with open("history.json") as f:
         h = json.load(f)
-    epochs = range(1, len(h["cnn"][graph_type]) + 1)
+    
+    max_len = max(len(h[m][graph_type] for m in h))
+    epochs = range(1, max_len + 1)
     plt.figure(figsize=(8,5))
-    plt.plot(epochs, h["cnn"][graph_type], label="CNN"+graph_title)
-    plt.plot(epochs, h["transformer"][graph_type], label="Transformer"+graph_title)
-    plt.plot(epochs, h["bilstm"][graph_type], label="BiLSTM"+graph_title)
+
+    for model in ["cnn", "transformer", "bilstm"]:
+        values = h[model][graph_type]
+        if len(values) == 0:
+            continue
+        padded = pad_to_length(values, max_len)
+        plt.plot(epochs, padded, label=f"{model.upper()} {graph_title}")
+        
     plt.xlabel("Epoch")
-    plt.ylabel("Accuracy")
-    plt.title("All Models"+graph_title)
+    plt.ylabel(graph_title)
+    plt.title("All Models "+graph_title)
     plt.legend()
     plt.grid(alpha=0.3)
     plt.savefig(f"{graph_type}.png", dpi=150)
+    plt.close()
      
 
 if __name__ == "__main__":
