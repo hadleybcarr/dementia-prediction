@@ -19,7 +19,7 @@ def all_graphs(graph_type:str, graph_title):
         values = h[model][graph_type]
         if len(values) == 0:
             continue
-        padded = pad_to_length(values, max_len)
+        padded = pad_to_length(values, 30)
         plt.plot(epochs, padded, label=f"{model.upper()} {graph_title}")
 
     plt.xlabel("Epoch")
