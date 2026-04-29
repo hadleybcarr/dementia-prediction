@@ -18,7 +18,7 @@ N_VITALS   = 6           # number of vital sign channels
 CHUNK_SIZE = 500_000     # rows per chunk when reading chartevents
 SEED       = 42
 
-CACHE_PATH = "/.cache/processed.pt"
+CACHE_PATH = "/cache/processed.pt"
 
 # Dementia ICD-10 prefixes (positive class)
 DEMENTIA_CODES = ("F01", "F02", "F03")
