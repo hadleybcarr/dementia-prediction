@@ -60,7 +60,7 @@ def featurize(X):
     F = np.stack(feats,axis=1)
     return F
 
-def train(train_loader, test_loader, val_loader):
+def svm_train(train_loader, test_loader, val_loader):
     X_train, y_train = loader_to_arrays(train_loader)
     X_val, y_val = loader_to_arrays(val_loader)
     X_test, y_test = loader_to_arrays(test_loader)

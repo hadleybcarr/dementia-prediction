@@ -13,7 +13,7 @@ from data_utils import get_dataloaders
 from transformer import build_transformer
 from cnn import build_cnn
 from bi_lstm import build_bilstm
-from svm_model import train
+from svm_model import svm_train
 
 CHECKPOINT_DIR = Path("./checkpoints")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -99,9 +99,10 @@ def train(
 
     train_loader, val_loader, test_loader, meta = get_dataloaders(batch_size=batch_size)
 
-    model = get_model(model_name, meta).to(DEVICE)
     if model == "svm":
-        model.train(train_loader, val_loader, test_loader)
+        svm_train(train_loader, val_loader, test_loader)
+
+    model = get_model(model_name, meta).to(DEVICE)
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Parameters: {n_params:,}\n")
 

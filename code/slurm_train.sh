@@ -4,8 +4,8 @@
 # Usage:
 #   sbatch slurm_train.sh cnn #run cnn
 #   sbatch slurm_train.sh transformer #run transformer
-#   sbatch slurm_train.sh cnn #run svm
-#   sbatch slurm_train.sh cnn #run bi_lstm
+#   sbatch slurm_train.sh svm #run svm
+#   sbatch slurm_train.sh bi_lstm #run bi_lstm
 
 # Monitor your job:
 #   myq                      # check job status
