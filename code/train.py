@@ -27,6 +27,8 @@ def get_model(model_name: str, meta: dict) -> nn.Module:
         return build_cnn(meta)
     elif model_name in ("bilstm", "bi-lstm", "bi_lstm"):
         return build_bilstm(meta)
+    elif model_name in "svm":
+        pass
     else:
         raise ValueError(f"Unknown model '{model_name}'. Choose: transformer | cnn | bilstm")
 

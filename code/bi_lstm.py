@@ -8,7 +8,6 @@ Input:
 Output:
   (batch,) — raw logit (apply sigmoid for probability)
 """
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -48,7 +47,6 @@ class DementiaBiLSTM(nn.Module):
       n_vitals     : number of vital sign channels (default 6)
       hidden_dim   : LSTM hidden size per direction (default 128; full BiLSTM = 256)
       n_layers     : number of stacked LSTM layers (default 3)
-      icd_dim      : ICD embedding output size (default 64)
       dropout      : dropout probability (default 0.3)
     """
 
@@ -57,7 +55,6 @@ class DementiaBiLSTM(nn.Module):
         n_vitals:    int = 6,
         hidden_dim:  int = 128,
         n_layers:    int = 3,
-        icd_dim:     int = 64,
         dropout:     float = 0.3,
     ):
         super().__init__()
@@ -86,16 +83,8 @@ class DementiaBiLSTM(nn.Module):
         self.post_attn_norm = nn.LayerNorm(bilstm_out_dim)
         self.dropout = nn.Dropout(dropout)
 
-        self.icd_embed = nn.Sequential(
-            nn.Linear(128, icd_dim * 2),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(icd_dim * 2, icd_dim),
-            nn.LayerNorm(icd_dim),
-        )
-
         self.classifier = nn.Sequential(
-            nn.Linear(bilstm_out_dim + icd_dim, 128),
+            nn.Linear(bilstm_out_dim, 128),
             nn.GELU(),
             nn.Dropout(dropout),
             nn.Linear(128, 1),
@@ -124,11 +113,8 @@ class DementiaBiLSTM(nn.Module):
         context = self.post_attn_norm(context)
         context = self.dropout(context)
 
-        # ICD embedding
-        icd_out = self.icd_embed(icd)            # (B, icd_dim)
-
         # Concatenate and classify
-        combined = torch.cat([context, icd_out], dim=-1)
+        combined = torch.cat([context], dim=-1)
         logits   = self.classifier(combined).squeeze(-1)   # (B,)
         return logits
 
@@ -145,8 +131,7 @@ class DementiaBiLSTM(nn.Module):
         context, attn_weights = self.attention(lstm_out)
         context = self.post_attn_norm(context)
         context = self.dropout(context)
-        icd_out = self.icd_embed(icd)
-        combined = torch.cat([context, icd_out], dim=-1)
+        combined = torch.cat([context], dim=-1)
         logits   = self.classifier(combined).squeeze(-1)
         return logits, attn_weights
 
@@ -160,7 +145,6 @@ def build_bilstm(meta: dict, **kwargs) -> DementiaBiLSTM:
     """
     return DementiaBiLSTM(
         n_vitals    = meta["n_vitals"],
-        n_icd_codes = meta["n_icd_codes"],
         **kwargs,
     )
 
@@ -173,11 +157,10 @@ if __name__ == "__main__":
 
     # Smoke test
     vitals = torch.randn(8, 48, 6)
-    icd    = torch.randint(0, 2, (8, 200)).float()
 
-    logits = model(vitals, icd)
+    logits = model(vitals)
     print(f"Output shape: {logits.shape}")    # (8,)
 
-    logits, weights = model.forward_with_attention(vitals, icd)
+    logits, weights = model.forward_with_attention(vitals)
     print(f"Attention weights shape: {weights.shape}")   # (8, 48)
     print(f"Attention sums (should ≈ 1): {weights.sum(dim=-1)[:3].detach()}")
