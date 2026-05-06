@@ -43,6 +43,7 @@ def run_epoch(model, loader, criterion, optimizer=None, device=DEVICE):
     total_loss = 0.0
     n_correct  = 0
     n_total    = 0
+    all_probs, all_labels = []
 
     ctx = torch.enable_grad() if training else torch.no_grad()
     with ctx:
@@ -63,6 +64,9 @@ def run_epoch(model, loader, criterion, optimizer=None, device=DEVICE):
             preds       = (torch.sigmoid(logits) >= 0.5).float()
             n_correct  += (preds == labels).sum().item()
             n_total    += len(labels)
+            probs = torch.sigmoid(logits)
+            all_probs.append(probs.detach().cpu().numpy())
+            all_labels.append(labels.detach().cpu().numpy())
 
     avg_loss = total_loss / n_total
     accuracy = n_correct / n_total
