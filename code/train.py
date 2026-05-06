@@ -43,7 +43,7 @@ def run_epoch(model, loader, criterion, optimizer=None, device=DEVICE):
     total_loss = 0.0
     n_correct  = 0
     n_total    = 0
-    all_probs, all_labels = []
+    all_probs, all_labels = [], []
 
     ctx = torch.enable_grad() if training else torch.no_grad()
     with ctx:
