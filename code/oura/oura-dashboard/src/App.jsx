@@ -10,7 +10,7 @@ import { useMemo, useState } from "react";
  * Default props render a polished standalone preview. Wire your own:
  *
  *   <VitalsDashboard
- *     vitals={{ restingHR, hrv, spo2, bodyTemp, respRate }}
+ *     vitals={{ restingHR, hrv, spo2, respRate }}
  *     riskScores={{ CNN, LSTM, Transformer, SVM }}
  *     confidence={{ CNN, LSTM, Transformer, SVM }}
  *   />
@@ -45,7 +45,6 @@ const VITAL_DEFS = [
   { key: "restingHR", label: "Resting Heart Rate",      eyebrow: "cardiac",      unit: "bpm"  },
   { key: "hrv",       label: "Heart Rate Variability",  eyebrow: "autonomic",    unit: "ms"   },
   { key: "spo2",      label: "Blood Oxygen",            eyebrow: "respiratory",  unit: "%"    },
-  { key: "bodyTemp",  label: "Body Temperature",        eyebrow: "thermal",      unit: "\u00B0C" },
   { key: "respRate",  label: "Respiratory Rate",        eyebrow: "breath",       unit: "/min" },
 ];
 

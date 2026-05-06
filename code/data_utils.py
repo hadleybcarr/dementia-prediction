@@ -131,8 +131,8 @@ def get_subject_labels(diagnoses_path: str) -> pd.DataFrame:
         replace=False,
     )
 
-    pos_df = pd.DataFrame({"subject_id": positive_ids, "label": 1})
-    neg_df = pd.DataFrame({"subject_id": negative_ids, "label": 0})
+    pos_df = pd.DataFrame({"subject_id": positive_ids, "label_df": 1})
+    neg_df = pd.DataFrame({"subject_id": negative_ids, "label_df": 0})
     labels = (
         pd.concat([pos_df, neg_df], ignore_index=True)
           .sample(frac=1, random_state=SEED)
@@ -329,7 +329,7 @@ def get_dataloaders(
         print(f"Loading cached tensors from {CACHE_PATH}")
         blob      = torch.load(CACHE_PATH, weights_only=False)
         x         = blob["x"]
-        labels    = blob["labels"]
+        labels    = blob["label_df"]
         idx_train = blob["train"]
         idx_val   = blob["val"]
         idx_test  = blob["test"]
@@ -338,7 +338,7 @@ def get_dataloaders(
         # 1. Cohort + labels
         label_df    = get_subject_labels(DIAGNOSES_PATH)
         subject_ids = label_df["subject_id"].values
-        labels_arr  = label_df["label"].values.astype(np.float32)
+        labels_arr  = label_df["label_df"].values.astype(np.float32)
 
         # 2. Vitals + missingness mask
         vitals, mask, n_obs = build_vitals_matrix(CHARTEVENTS_PATH, subject_ids)
