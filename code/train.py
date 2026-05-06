@@ -2,6 +2,7 @@ import argparse
 import os
 import time
 from pathlib import Path
+import numpy as np
 
 import torch
 import torch.nn as nn
@@ -60,12 +61,21 @@ def run_epoch(model, loader, criterion, optimizer=None, device=DEVICE):
 
             total_loss += loss.item() * len(labels)
             preds       = (torch.sigmoid(logits) >= 0.5).float()
-            print("AUC score is", roc_auc_score(labels, preds))
             n_correct  += (preds == labels).sum().item()
             n_total    += len(labels)
 
     avg_loss = total_loss / n_total
     accuracy = n_correct / n_total
+
+    all_probs  = np.concatenate(all_probs)
+    all_labels = np.concatenate(all_labels)
+    auc = roc_auc_score(all_labels, all_probs) if len(np.unique(all_labels)) > 1 else float("nan")
+
+    print("AUROC is", auc)
+    
+    #with open("auroc.json", "wb") as f:
+    #    json.dump(auc)
+
     return avg_loss, accuracy
 
 
