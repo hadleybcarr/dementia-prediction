@@ -5,7 +5,7 @@ Tiny FastAPI server that fetches Oura data and reshapes it for VitalsDashboard.
 
 Run:
   pip install fastapi uvicorn requests python-dotenv
-  uvicorn server:app --reload --port 8000
+  uvicorn server:app --reload --port 5173
 
 Endpoint:
   GET /api/vitals → {
@@ -17,6 +17,8 @@ Endpoint:
 
 The access_token is read from .env at startup. After your first run of
 auth.py, paste the token it printed into .env as OURA_ACCESS_TOKEN.
+
+To run server: uvicorn server:app --reload --port 5173
 """
 
 import os

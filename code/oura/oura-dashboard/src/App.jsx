@@ -42,10 +42,10 @@ const DEFAULT_CONFIDENCE = {
 };
 
 const VITAL_DEFS = [
-  { key: "restingHR", label: "Resting Heart Rate",      eyebrow: "cardiac",      unit: "bpm"  },
-  { key: "hrv",       label: "Heart Rate Variability",  eyebrow: "autonomic",    unit: "ms"   },
-  { key: "spo2",      label: "Blood Oxygen",            eyebrow: "respiratory",  unit: "%"    },
-  { key: "respRate",  label: "Respiratory Rate",        eyebrow: "breath",       unit: "/min" },
+  { key: "restingHR", label: "Resting Heart Rate",unit: "bpm"  },
+  { key: "hrv",       label: "Heart Rate Variability",   unit: "ms"},
+  { key: "spo2",      label: "Blood Oxygen",unit: "%"},
+  { key: "respRate",  label: "Respiratory Rate",unit: "/min" },
 ];
 
 const ARCHITECTURES = ["CNN", "LSTM", "Transformer", "SVM"];
@@ -111,7 +111,6 @@ export default function VitalsDashboard({
         <div className="vd-vitals">
           {VITAL_DEFS.map((v) => (
             <article key={v.key} className="vd-vital">
-              <p className="vd-vital-eyebrow">{v.eyebrow}</p>
               <p className="vd-vital-value">
                 {vitals[v.key]}
                 <span className="vd-vital-unit">{v.unit}</span>
