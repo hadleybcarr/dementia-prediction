@@ -57,9 +57,9 @@ CHARTEVENTS_PATH = os.path.join(ICU_PATH,  "chartevents.csv")
 
 # ── Config ────────────────────────────────────────────────────────────────────
 SEQ_LEN          = 48        # hourly time steps per patient
-N_VITAL_SIGNALS  = 6         # raw vital sign channels
+N_VITALS  = 6         # raw vital sign channels
 N_DEMO_CHANNELS  = 2         # age + sex
-TOTAL_CHANNELS   = N_VITAL_SIGNALS * 2 + N_DEMO_CHANNELS  # vitals + mask + demo = 14
+TOTAL_CHANNELS   = N_VITALS * 2 + N_DEMO_CHANNELS  # vitals + mask + demo = 14
 
 CHUNK_SIZE       = 500_000
 SEED             = 42
@@ -94,7 +94,7 @@ AGE_BOUNDS = (18, 100)
 # ── Cache key (auto-invalidates when config changes) ──────────────────────────
 _CONFIG_BLOB = json.dumps({
     "seq_len":   SEQ_LEN,
-    "n_vital":   N_VITAL_SIGNALS,
+    "n_vital":   N_VITALS,
     "min_obs":   MIN_CHART_OBSERVATIONS,
     "vitals":    list(VITAL_ITEM_IDS.values()),
     "bounds":    {k: list(v) for k, v in VITAL_BOUNDS.items()},
@@ -209,8 +209,8 @@ def build_vitals_matrix(chartevents_path: str, subject_ids: np.ndarray):
     print(f"  chartevents rows after filtering: {len(df):,}")
 
     n_subj = len(subject_ids)
-    vitals = np.full((n_subj, SEQ_LEN, N_VITAL_SIGNALS), np.nan, dtype=np.float32)
-    mask   = np.zeros((n_subj, SEQ_LEN, N_VITAL_SIGNALS), dtype=np.float32)
+    vitals = np.full((n_subj, SEQ_LEN, N_VITALS), np.nan, dtype=np.float32)
+    mask   = np.zeros((n_subj, SEQ_LEN, N_VITALS), dtype=np.float32)
     n_obs  = np.zeros(n_subj, dtype=np.int32)
 
     # One groupby up front is much faster than the previous per-subject filter.
@@ -278,15 +278,15 @@ def build_full_input(
     n = len(subject_ids)
     out = np.zeros((n, SEQ_LEN, TOTAL_CHANNELS), dtype=np.float32)
 
-    out[:, :, 0:N_VITAL_SIGNALS]                   = vitals
-    out[:, :, N_VITAL_SIGNALS:2 * N_VITAL_SIGNALS] = mask
+    out[:, :, 0:N_VITALS]                   = vitals
+    out[:, :, N_VITALS:2 * N_VITALS] = mask
 
     demo = demo_df.reindex(subject_ids)
     age  = demo["age"].fillna(0.5).values.astype(np.float32)   # neutral default
     sex  = demo["sex"].fillna(0.5).values.astype(np.float32)
 
-    out[:, :, 2 * N_VITAL_SIGNALS]     = age[:, None]   # broadcast over T
-    out[:, :, 2 * N_VITAL_SIGNALS + 1] = sex[:, None]
+    out[:, :, 2 * N_VITALS]     = age[:, None]   # broadcast over T
+    out[:, :, 2 * N_VITALS + 1] = sex[:, None]
 
     return out
 
@@ -382,7 +382,7 @@ def get_dataloaders(
         meta = {
             "seq_len":         SEQ_LEN,
             "n_vitals":        TOTAL_CHANNELS,    # what model constructors read
-            "n_vital_signals": N_VITAL_SIGNALS,
+            "n_vital_signals": N_VITALS,
             "vital_names":     list(VITAL_ITEM_IDS.values()),
             "pos_weight":      pos_weight,
             "n_train":         len(idx_train),
