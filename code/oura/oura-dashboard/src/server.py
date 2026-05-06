@@ -206,6 +206,7 @@ def fetch_vitals() -> Dict[str, Any]:
 
 @app.get("/api/vitals")
 def get_vitals():
+    print("fetching vitals...")
     return fetch_vitals()
 
 
