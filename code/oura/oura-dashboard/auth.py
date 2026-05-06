@@ -6,7 +6,8 @@ import os
 from dotenv import load_dotenv
 
 
-url = "https://cloud.ouraring.com/oauth/authorize?client_id=b04c3fa6-07e0-4b29-9504-4d51d324e99d&redirect_uri=http%3A%2F%2Flocalhost%3A5173%2F&response_type=code&scope=daily+heartrate+personal"
+url_1 = "https://cloud.ouraring.com/oauth/authorize?client_id=b04c3fa6-07e0-4b29-9504-4d51d324e99d&redirect_uri=http%3A%2F%2Flocalhost%3A5173%2F&response_type=code&scope=daily+heartrate+personal"
+#url_2 = "https://cloud.ouraring.com/oauth/authorize?client_id=b04c3fa6-07e0-4b29-9504-4d51d324e99d&redirect_uri=http%3A%2F%2Flocalhost%3A5173&response_type=code&scope=email+personal+daily+heartrate+tag+workout+session+spo2+ring_configuration+stress+heart_health
 # Your OAuth2 application credentials
 load_dotenv()
 
@@ -19,7 +20,7 @@ auth_params = {
     "client_id": CLIENT_ID,
     "redirect_uri": REDIRECT_URI,
     "response_type": "code",
-    "scope": "daily heartrate personal"
+   "scope": "personal daily heartrate spo2 sleep heart_health"
 }
 auth_url = f"https://cloud.ouraring.com/oauth/authorize?{urlencode(auth_params)}"
 print(f"Please visit this URL to authorize: {auth_url}")
@@ -47,10 +48,6 @@ headers = {"Authorization": f"Bearer {access_token}"}
 heart_rate = requests.get(
     "https://api.ouraring.com/v2/usercollection/heartrate",
     headers=headers,
-     params={
-       "start_datetime": "2023-01-01T00:00:00-00:00",
-       "end_datetime":   "2023-01-07T23:59:59-00:00",
-   }
 )
 print(json.dumps(heart_rate.json(), indent=2))
 
@@ -70,12 +67,12 @@ vo2_max = requests.get(
 
 print(json.dumps(vo2_max.json(), indent=2))
 
-hrv = requests.get(
-    "https://api.ouraring.com/v2/usercollection/interbeat_interval",
-    headers = headers, 
-    params = {}
+sleep = requests.get(
+    "https://api.ouraring.com/v2/usercollection/sleep",
+    headers=headers,
+    params={"start_date": "2023-01-01", "end_date": "2023-01-07"},
 )
-print(json.dumps(hrv.json(), indent=2))
+print(json.dumps(sleep.json(), indent=2))
 
 
 

@@ -251,8 +251,8 @@ def build_vitals_matrix(chartevents_path: str, subject_ids: np.ndarray):
         seq = pd.DataFrame(vitals[i], columns=vital_names).ffill().bfill()
         vitals[i] = seq.values
 
-    col_means = np.nanmean(vitals.reshape(-1, N_VITAL_SIGNALS), axis=0)
-    for j in range(N_VITAL_SIGNALS):
+    col_means = np.nanmean(vitals.reshape(-1, N_VITALS), axis=0)
+    for j in range(N_VITALS):
         nan_idx = np.isnan(vitals[:, :, j])
         vitals[:, :, j][nan_idx] = col_means[j]
 
