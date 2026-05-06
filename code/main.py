@@ -12,7 +12,7 @@ def all_graphs(graph_type:str, graph_title):
         h = json.load(f)
         #print(h)
     
-    epochs = range(1, 30+1)
+    epochs = range(1, 15+1)
     plt.figure(figsize=(8,5))
 
     for model in ["cnn", "transformer", "bilstm"]:

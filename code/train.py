@@ -8,6 +8,7 @@ import torch.nn as nn
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import json 
+from sklearn.metrics import roc_auc_score
 
 from data_utils import get_dataloaders
 from transformer import build_transformer
@@ -59,6 +60,7 @@ def run_epoch(model, loader, criterion, optimizer=None, device=DEVICE):
 
             total_loss += loss.item() * len(labels)
             preds       = (torch.sigmoid(logits) >= 0.5).float()
+            print("AUC score is", roc_auc_score(labels, preds))
             n_correct  += (preds == labels).sum().item()
             n_total    += len(labels)
 
@@ -106,6 +108,9 @@ def train(
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Parameters: {n_params:,}\n")
 
+    n_pos = sum(labels.sum().item() for _, labels in train_loader)
+    n_neg = sum((1 - labels).sum().item() for _, labels in train_loader)
+    pos_weight = n_neg / max(n_pos, 1)
     criterion = nn.BCEWithLogitsLoss(
         pos_weight=torch.tensor([pos_weight], device=DEVICE)
     )
@@ -212,7 +217,7 @@ if __name__ == "__main__":
     parser.add_argument("--model",      type=str,   default="transformer",
                         choices=["transformer", "cnn", "bilstm", "svm"],
                         help="Which model architecture to train")
-    parser.add_argument("--epochs",     type=int,   default=30)
+    parser.add_argument("--epochs",     type=int,   default=15)
     parser.add_argument("--lr",         type=float, default=1e-4)
     parser.add_argument("--batch_size", type=int,   default=64)
     parser.add_argument("--patience",   type=int,   default=7)
