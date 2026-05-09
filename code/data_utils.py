@@ -57,7 +57,7 @@ CHARTEVENTS_PATH = os.path.join(ICU_PATH,  "chartevents.csv")
 
 # ── Config ────────────────────────────────────────────────────────────────────
 SEQ_LEN          = 24        # hourly time steps per patient
-N_VITALS  = 6         # raw vital sign channels
+N_VITALS  = 5        # raw vital sign channels
 N_DEMO_CHANNELS  = 2         # age + sex
 TOTAL_CHANNELS   = N_VITALS * 2 + N_DEMO_CHANNELS  # vitals + mask + demo = 14
 MIN_VITALS_PER_HOUR = 5
