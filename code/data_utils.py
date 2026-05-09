@@ -60,7 +60,7 @@ SEQ_LEN          = 24        # hourly time steps per patient
 N_VITALS  = 6         # raw vital sign channels
 N_DEMO_CHANNELS  = 2         # age + sex
 TOTAL_CHANNELS   = N_VITALS * 2 + N_DEMO_CHANNELS  # vitals + mask + demo = 14
-
+MIN_VITALS_PER_HOUR = 5
 CHUNK_SIZE       = 500_000
 SEED             = 42
 
@@ -94,6 +94,7 @@ _CONFIG_BLOB = json.dumps({
     "seq_len":   SEQ_LEN,
     "n_vital":   N_VITALS,
     "min_obs":   MIN_CHART_OBSERVATIONS,
+    "min_per_hour": MIN_VITALS_PER_HOUR,
     "vitals":    list(VITAL_ITEM_IDS.values()),
     "bounds":    {k: list(v) for k, v in VITAL_BOUNDS.items()},
     "age":       list(AGE_BOUNDS),
@@ -344,14 +345,21 @@ def get_dataloaders(
         # 3. Drop patients with too little real data
         keep = n_obs >= MIN_CHART_OBSERVATIONS
         dropped = int((~keep).sum())
-        if dropped:
-            print(f"  Dropped {dropped:,} patients with < {MIN_CHART_OBSERVATIONS} chart events")
+
+        if MIN_VITALS_PER_HOUR > 0: 
+            vitals_per_hour = mask.sum(axis=2)
+            full_coverage = (vitals_per_hour >= MIN_VITALS_PER_HOUR).all(axis=1)
+            keep = keep & full_coverage
+            if dropped:
+                print(f"  Dropped {dropped:,} patients with < {MIN_CHART_OBSERVATIONS} chart events")
+
+        
         subject_ids = subject_ids[keep]
         labels_arr  = labels_arr[keep]
         vitals      = vitals[keep]
         mask        = mask[keep]
         print(f"  Cohort after filtering: {len(subject_ids):,} "
-              f"({int(labels_arr.sum()):,} pos / {int((1 - labels_arr).sum()):,} neg)")
+            f"({int(labels_arr.sum()):,} pos / {int((1 - labels_arr).sum()):,} neg)")
 
         # 4. Demographics
         demo_df = load_demographics(PATIENTS_PATH, subject_ids)
