@@ -56,7 +56,7 @@ PATIENTS_PATH    = os.path.join(HOSP_PATH, "patients.csv")
 CHARTEVENTS_PATH = os.path.join(ICU_PATH,  "chartevents.csv")
 
 # ── Config ────────────────────────────────────────────────────────────────────
-SEQ_LEN          = 48        # hourly time steps per patient
+SEQ_LEN          = 24        # hourly time steps per patient
 N_VITALS  = 6         # raw vital sign channels
 N_DEMO_CHANNELS  = 2         # age + sex
 TOTAL_CHANNELS   = N_VITALS * 2 + N_DEMO_CHANNELS  # vitals + mask + demo = 14
