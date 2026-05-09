@@ -169,7 +169,7 @@ def main():
                     help="Output figure path")
     args = ap.parse_args()
 
-    cache_path = Path("cache/processed_33b9e15f.pt")
+    cache_path = Path("cache/processed_d0af355e.pt")
     mask, labels, meta = load_mask_and_labels(cache_path)
     make_figure(mask, labels, meta, args.out)
 

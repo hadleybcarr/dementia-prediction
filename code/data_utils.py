@@ -66,7 +66,7 @@ SEED             = 42
 
 # Patients with fewer than this many filtered chart-event rows are dropped.
 # Most non-ICU patients have 0; this keeps anyone with at least a brief stay.
-MIN_CHART_OBSERVATIONS = 10
+MIN_CHART_OBSERVATIONS = 50
 
 DEMENTIA_CODES = ("F01", "F02", "F03")
 
@@ -74,7 +74,6 @@ VITAL_ITEM_IDS = {
     220045: "heart_rate",
     220179: "sbp",
     220180: "dbp",
-    223761: "temperature",
     220277: "spo2",
     220210: "resp_rate",
 }
@@ -83,8 +82,7 @@ VITAL_ITEM_IDS = {
 VITAL_BOUNDS = {
     "heart_rate":  (20,  250),
     "sbp":         (50,  250),
-    "dbp":         (20,  180),
-    "temperature": (90,  108),   # Fahrenheit
+    "dbp":         (20,  180), 
     "spo2":        (50,  100),
     "resp_rate":   (4,   60),
 }
