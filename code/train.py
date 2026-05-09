@@ -249,7 +249,6 @@ def run_shap_analysis(model, train_loader, test_loader, meta,
     n_v = meta["n_vital_signals"]
     channel_names = (
         list(vital_names)
-        + [f"mask_{v}" for v in vital_names]
         + ["age", "sex"]
     )
 
