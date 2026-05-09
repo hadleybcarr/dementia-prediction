@@ -142,6 +142,15 @@ def train(
     with open("history.json", "r") as f:
         history = json.load(f)
     
+    print("History does not exist, making dictionary...")
+    if history == {}:
+        history = {
+            "svm": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
+            "cnn": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
+            "transformer": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
+            "bilstm": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []}
+            }
+        
     best_val_loss = float("inf")
     patience_counter = 0
 
