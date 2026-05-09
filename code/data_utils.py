@@ -57,10 +57,10 @@ CHARTEVENTS_PATH = os.path.join(ICU_PATH,  "chartevents.csv")
 
 # ── Config ────────────────────────────────────────────────────────────────────
 SEQ_LEN          = 24        # hourly time steps per patient
-N_VITALS  = 4        # raw vital sign channels
+N_VITALS  = 5        # raw vital sign channels
 N_DEMO_CHANNELS  = 2         # age + sex
 TOTAL_CHANNELS   = N_VITALS + N_DEMO_CHANNELS  # vitals + mask + demo = 14
-MIN_VITALS_PER_HOUR = 5
+MIN_VITALS_PER_HOUR = 4
 CHUNK_SIZE       = 500_000
 SEED             = 42
 
@@ -123,7 +123,7 @@ def get_subject_labels(diagnoses_path: str) -> pd.DataFrame:
     negative_ids = np.setdiff1d(all_ids, positive_ids)
 
     rng = np.random.default_rng(SEED)
-    n_pos = len(positive_ids)
+    n_pos = len(positive_ids) * 2 #manually adjusting to be x2 because the negative labels proved to be more vulnerable to vital trimming
     negative_ids = rng.choice(
         negative_ids,
         size=min(n_pos, len(negative_ids)),

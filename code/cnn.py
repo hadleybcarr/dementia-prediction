@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class DementiaCNN(nn.Module):
-    def __init__(self, n_features=14, n_timesteps=48):
+    def __init__(self, n_features=14, n_timesteps=24):
         super().__init__()
         self.n_temporal = n_features - 2          # vitals + mask
         self.n_demo     = 2                       # age + sex
@@ -43,7 +43,7 @@ def build_cnn(meta:dict):
     return DementiaCNN(n_features=num_vitals, n_timesteps=48)
 
 if __name__ == "__main__":
-    model = DementiaCNN(n_vitals=6, seq_len=48)
+    model = DementiaCNN(n_vitals=5, seq_len=48)
     print(model)
     total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Trainable parameters: {total_params:,}")

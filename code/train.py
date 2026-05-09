@@ -131,10 +131,12 @@ def train(
         pos_weight=torch.tensor([pos_weight], device=DEVICE)
     )
 
-
-    #TODO: CHANGE LOSS AND OPTIMIZER!!
     optimizer = AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
-    scheduler = CosineAnnealingLR(optimizer, T_max=epochs, eta_min=lr / 100)
+    #scheduler = CosineAnnealingLR(optimizer, T_max=epochs, eta_min=lr / 100)
+
+    scheduler = torch.optim.lr_scheduler.OneCycleLR(
+    optimizer, max_lr=lr, epochs=epochs, steps_per_epoch=len(train_loader),
+)
 
     CHECKPOINT_DIR.mkdir(exist_ok=True)
     ckpt_path = CHECKPOINT_DIR / f"best_{model_name}.pt"
