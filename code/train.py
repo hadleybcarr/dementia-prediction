@@ -16,6 +16,8 @@ from transformer import build_transformer
 from cnn import build_cnn
 from bi_lstm import build_bilstm
 from svm_model import svm_train
+import shap 
+import matplotlib.pyplot as plt
 
 CHECKPOINT_DIR = Path("./checkpoints")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -198,6 +200,9 @@ def train(
           f"std={param.std().item():.4f}, "
           f"min={param.min().item():.4f}, "
           f"max={param.max().item():.4f}")
+         
+    if model != "svm":
+        run_shap_analysis(model, train_loader, test_loader, meta, model_name, out_path=f"shap_{model_name}.png")
 
     return {
         "model":      model,
@@ -225,6 +230,85 @@ def load_model(model_name: str, ckpt_path: str, device=DEVICE) -> tuple:
     return model, meta
 
 
+def run_shap_analysis(model, train_loader, test_loader, meta, 
+                      model_name, n_background: int=100, n_explain: int=200, out_path: str=None,device=DEVICE,):
+    
+    model = model.to(device).eval()
+    vital_names = meta.get("vital_names", ["heart_rate", "sbp", "dbp", "spo2", "resp_rate"])
+    n_v = meta["n_vital_signals"]
+    channel_names = (
+        list(vital_names)
+        + [f"mask_{v}" for v in vital_names]
+        + ["age", "sex"]
+    )
+
+    def collect(loader,n):
+        xs = []
+        seen = 0
+        for x, _ in loader:
+            xs.append(x)
+            seen += x.shape[0]
+            if seen >= n:
+                break
+        return torch.cat(xs, dim=0)[:n].to(device)
+    
+    background = collect(train_loader, n_background)
+    explain = collect(test_loader, n_explain)
+
+    class _Wrap(nn.Module):
+        def __init__(self,m): super().__init__(); self.m = m
+        def forward(self, x):
+            out = self.m(x)
+            return out.unsqueeze(-1) if out.ndim == 1 else out
+        
+    wrapped = _Wrap(model).to(device).eval()
+    explainer = shap.GradientExplainer(wrapped, background)
+    shap_vals = explainer.shap_vals(explain)
+
+    if isinstance(shap_vals, list):
+        shap_vals = shap_vals[0]
+    if shap_vals.ndim == 4 and shap_vals.shape[-1] == 1:
+        shap_vals = shap_vals.squeeze(-1)
+
+    abs_shap = np.abs(shap_vals)
+    per_channel = abs_shap.mean(axis=(0,1))
+    per_time_chan = abs_shap.mean(axis=0)
+
+    order = np.argsort(per_channel)[::-1]
+    for k in order:
+        print(f"  {channel_names[k]:<14}  {per_channel[k]:.5f}")
+
+    fig, axes = plt.subplots(1,2, figsize=(14,6), gridspec_kw={"width_ratios":[1,1.2]})
+    names_sorted = [channel_names[i] for i in order][::-1]
+    vals_sorted = per_channel[order][::-1]
+    axes[0].barh(names_sorted, vals_sorted, color="#4C72B0")
+    axes[0].set_title("Mean |SHAP| per channel")
+    axes[0].set_xlabel("Mean |SHAP|")
+
+    im = axes[1].imshow(per_time_chan.T, aspect="auto", cmap="viridis")
+    axes[1].set_yticks(range(len(channel_names)))
+    axes[1].set_yticklabels(channel_names)
+    axes[1].set_xlabel("Hour")
+    axes[1].set_title("Mean |SHAP| per (hour, channel)")
+    plt.colorbar(im, ax=axes[1])
+
+    fig.suptitle(f"SHAP feature importance — {model_name}", y=1.02)
+    fig.tight_layout()
+
+    if out_path is None:
+        out_path = f"shap_{model_name}.png"
+    fig.savefig(out_path, dpi=150, bbox_inches="tight")
+    print(f"Saved → {out_path}")
+
+    return {
+        "channel_names":  channel_names,
+        "per_channel":    per_channel,
+        "per_time_chan":  per_time_chan,
+        "shap_values":    shap_vals,
+    }
+    
+
+                             
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train a dementia risk model on MIMIC-IV")
