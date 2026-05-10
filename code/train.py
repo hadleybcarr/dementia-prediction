@@ -141,7 +141,7 @@ def train(
     CHECKPOINT_DIR.mkdir(exist_ok=True)
     ckpt_path = CHECKPOINT_DIR / f"best_{model_name}.pt"
 
-    with open("history.json", "r") as f:
+    with open("history.json", "r+") as f:
         history = json.load(f)
     
     print("History does not exist, making dictionary...")
