@@ -141,17 +141,19 @@ def train(
     CHECKPOINT_DIR.mkdir(exist_ok=True)
     ckpt_path = CHECKPOINT_DIR / f"best_{model_name}.pt"
 
-    with open("history.json", "r+") as f:
-        history = json.load(f)
-    
-    print("History does not exist, making dictionary...")
-    if history == {}:
-        history = {
-            "svm": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
-            "cnn": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
-            "transformer": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
-            "bilstm": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []}
-            }
+    if Path("history.json").exists():
+        with open("history.json", "r") as f:
+            history = json.load(f)
+    else:
+        with open("history.json", "w") as file:
+            history = {
+                "svm": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
+                "cnn": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
+                "transformer": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
+                "bilstm": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []}
+                }
+            json.dump(file, history, indent=2)
+
         
     best_val_loss = float("inf")
     patience_counter = 0
