@@ -51,9 +51,9 @@ def load_mask_and_labels(cache_path: str):
 
     n_vital = meta["n_vital_signals"]
     # Mask channels are [n_vital : 2*n_vital]
-    mask = x[:, :, n_vital : 2 * n_vital].numpy()  # (N, T, n_vital)
+    #mask = x[:, :, n_vital : 2 * n_vital].numpy()  # (N, T, n_vital)
 
-    return mask, labels, meta
+    return labels, meta
 
 
 def make_figure(mask: np.ndarray, labels: np.ndarray, meta: dict, out_path: str):
