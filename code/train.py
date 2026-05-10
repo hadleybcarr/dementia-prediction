@@ -190,8 +190,6 @@ def train(
                     ckpt_path,
                 )
                 print(f"  ✓ Saved best checkpoint → {ckpt_path}")
-                with open("history.json", "w") as f:
-                    json.dump(history, f)
         else:
             patience_counter += 1
             if patience_counter >= patience:
@@ -205,6 +203,9 @@ def train(
 
     test_loss, test_acc = run_epoch(model, test_loader, criterion, None, DEVICE)
     print(f"\nTest  loss: {test_loss:.4f}  |  Test  acc: {test_acc:.3f}")
+    
+    with open("history.json", "w") as f:
+            json.dump(history, f)
 
     for name, param in model.named_parameters():
          print(f"{name}: mean={param.mean().item():.4f}, "
