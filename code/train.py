@@ -152,7 +152,7 @@ def train(
                 "transformer": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
                 "bilstm": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []}
                 }
-            json.dump(history, file indent=2)
+            json.dump(history, file, indent=2)
 
         
     best_val_loss = float("inf")
