@@ -145,14 +145,14 @@ def train(
         with open("history.json", "r") as f:
             history = json.load(f)
     else:
-        with open("history.json", "w") as file:
+        with open("history.json", "w+") as file:
             history = {
                 "svm": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
                 "cnn": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
                 "transformer": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
                 "bilstm": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []}
                 }
-            json.dump(history, file, indent=2)
+            json.dump(history, file,indent=2)
 
         
     best_val_loss = float("inf")
