@@ -341,7 +341,7 @@ if __name__ == "__main__":
     parser.add_argument("--model",      type=str,   default="transformer",
                         choices=["transformer", "cnn", "bilstm", "svm"],
                         help="Which model architecture to train")
-    parser.add_argument("--epochs",     type=int,   default=30)
+    parser.add_argument("--epochs",     type=int,   default=60)
     parser.add_argument("--lr",         type=float, default=1e-4)
     parser.add_argument("--batch_size", type=int,   default=64)
     parser.add_argument("--patience",   type=int,   default=7)
