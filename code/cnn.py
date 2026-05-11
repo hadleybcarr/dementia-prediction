@@ -12,15 +12,15 @@ class ResTCNBlock(nn.Module):
         self.norm1 = nn.GroupNorm(8, channels)
         self.norm2 = nn.GroupNorm(8, channels)
         self.drop = nn.Dropout(dropout)
-        self.pool1 = nn.AdaptiveAvgPool1d()
-        self.pool2 = nn.AdaptiveAvgPool1d()
+        #self.pool1 = nn.AdaptiveAvgPool1d()
+        #self.pool2 = nn.AdaptiveAvgPool1d()
         self.act = nn.GELU()
 
     def forward(self,x):
         r = x
-        x = self.pool1(self.act(self.norm1(self.conv1(x))))
+        x = (self.act(self.norm1(self.conv1(x))))
         x = self.drop(x)
-        x = self.pool2(self.act(self.norm2(self.conv2(x))))
+        x = (self.act(self.norm2(self.conv2(x))))
         x = self.drop(x)
         return r + x 
 

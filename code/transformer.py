@@ -49,7 +49,7 @@ class DementiaTransformer(nn.Module):
     Transformer-based dementia risk classifier.
 
     Args:
-      n_vitals     : number of vital sign channels (default 6)
+      n_vitals     : number of vital sign channels (default 5)
       d_model      : internal embedding dimension (default 128)
       n_heads      : number of attention heads (default 8)
       n_layers     : number of encoder layers (default 4)
@@ -60,13 +60,13 @@ class DementiaTransformer(nn.Module):
 
     def __init__(
         self,
-        n_vitals:    int = 6,
+        n_vitals:    int = 5,
         d_model:     int = 128,
         n_heads:     int = 8,
         n_layers:    int = 4,
         dim_ff:      int = 256,
         dropout:     float = 0.1,
-        seq_len:     int = 48,
+        seq_len:     int = 24,
     ):
         super().__init__()
 
@@ -142,12 +142,12 @@ def build_transformer(meta: dict, **kwargs) -> DementiaTransformer:
 
 
 if __name__ == "__main__":
-    model = DementiaTransformer(n_vitals=6, seq_len=48)
+    model = DementiaTransformer(n_vitals=6, seq_len=24)
     print(model)
     total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Trainable parameters: {total_params:,}")
 
-    vitals = torch.randn(8, 48, 6)
+    vitals = torch.randn(8, 24, 6)
     out    = model(vitals,)
     print(f"Output shape: {out.shape}")    # (8,)
     print(f"Sample logits: {out[:3].detach()}")
