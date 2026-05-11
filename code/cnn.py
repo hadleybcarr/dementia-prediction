@@ -67,8 +67,9 @@ class DementiaCNN(nn.Module):
         demo     = x[:, 0, self.n_temporal:]                    # (B, 2) — same at every t
         h = self.stem(temporal)
         h = self.blocks(h)
+        pooled = h.mean(dim=-1)
         demo_h = self.demo_mlp(demo)
-        out = self.head(torch.cat([h, demo_h]), dim=-1)
+        out = self.head(torch.cat([pooled, demo_h], dim=-1))
         return out.squeeze(-1)
 
 

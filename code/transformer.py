@@ -20,7 +20,37 @@ import math
 import torch
 import torch.nn as nn
 
+class ConvStem(nn.Module):
+    def __init__(self, in_ch:int, d_model:int, kernel_size:int=3, dropout:float=0.1):
+        super().__init__()
+        pad = kernel_size // 2
+        self.net = nn.Sequential(
+            nn.Conv1d(in_ch, d_model, kernel_size, padding=pad),
+            nn.GroupNorm(8, d_model),
+            nn.GELU(),
+            nn.Conv1d(d_model, d_model, kernel_size, padding=pad),
+            nn.GroupNorm(8, d_model),
+            nn.GELU(),
+            nn.Dropout(dropout)
+        )
 
+    def forward(self, x):
+        x = x.transpose(1,2)
+        x = self.net(x)
+        return x.transpose(1,2)
+    
+class AttentionPool(nn.Module):
+    def __init__(self, d_model:int):
+        super().__init__()
+        self.q = nn.Parameter(torch.zeros(1,1,d_model))
+        nn.init.trunc_normal_(self.q, std=0.02)
+        self.attn = nn.MultiheadAttention(d_model, num_heads=1, batch_first=True)
+
+    def forward(self, x, key_padding_mask=None):
+        q = self.q.expand(x.size(0), -1,-1)
+        out, _ = self.attn(q, x,x,key_padding_mask=None, need_weights=False)
+        return out.squeeze(1)
+    
 class PositionalEncoding(nn.Module):
     """Standard sinusoidal positional encoding."""
 
