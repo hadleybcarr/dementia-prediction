@@ -171,6 +171,9 @@ def train(
 
         train_loss, train_acc, train_auc = run_epoch(model, train_loader, criterion, optimizer, DEVICE)
         val_loss,   val_acc, val_auc   = run_epoch(model, val_loader,   criterion, None,      DEVICE)
+        update_bn(train_loader, swa_model, device=DEVICE)
+        s_loss, s_acc, s_auc = run_epoch(swa_model, val_loader, criterion, optimizer, DEVICE)
+        best = swa_model if s_auc >= val_auc else model
 
             
         if epoch >= swa_start:
@@ -218,8 +221,7 @@ def train(
         model.load_state_dict(ckpt["model_state"])
         print(f"\nLoaded best checkpoint (epoch {ckpt['epoch']}, val_loss={ckpt['val_loss']:.4f})")
 
-    update_bn(train_loader, swa_model, device=DEVICE)
-    test_loss, test_acc = run_epoch(swa_model, test_loader, criterion, None, DEVICE)
+    test_loss, test_acc = run_epoch(best, test_loader, criterion, None, DEVICE)
     print(f"\nTest  loss: {test_loss:.4f}  |  Test  acc: {test_acc:.3f}")
     
     with open("history.json", "w") as f:
@@ -354,6 +356,4 @@ if __name__ == "__main__":
         epochs      = args.epochs,
         lr          = args.lr,
         batch_size  = args.batch_size,
-        patience    = args.patience,
-        pos_weight  = args.pos_weight,
     )
