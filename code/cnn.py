@@ -49,7 +49,7 @@ class DementiaCNN(nn.Module):
             nn.Linear(demo_dim, demo_dim)
         )
 
-        fused_dim = 2*channels + demo_dim
+        fused_dim = channels + demo_dim
         self.head = nn.Sequential(
             nn.LayerNorm(fused_dim),
             nn.Dropout(dropout),

@@ -88,17 +88,15 @@ class DementiaTransformer(nn.Module):
       seq_len      : sequence length — used for positional encoding (default 48)
     """
 
-    def __init__(
-        self,
-        n_vitals:    int = 5,
-        d_model:     int = 128,
-        n_heads:     int = 8,
-        n_layers:    int = 4,
-        dim_ff:      int = 256,
-        dropout:     float = 0.1,
-        seq_len:     int = 24,
+    def __init__(self,
+        n_vitals:int = 5,n_demo: int=2,d_model:int = 96,n_heads:int = 8,n_features=14,
+        n_layers:int = 3,dim_ff:int = 256,dropout:float = 0.2,seq_len:int = 24
     ):
         super().__init__()
+
+        self.n_features = n_features
+        self.n_demo = n_demo
+        self.n_temporal = n_features - n_demo
 
         self.input_proj = nn.Sequential(
             nn.Linear(n_vitals, d_model),
