@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
-from torch.optim.swa_utils import SWALR, AveragedModel
+from torch.optim.swa_utils import SWALR, AveragedModel, update_bn
 import json 
 from sklearn.metrics import roc_auc_score
 
@@ -83,7 +83,7 @@ def run_epoch(model, loader, criterion, optimizer=None, device=DEVICE):
     #with open("auroc.json", "wb") as f:
     #    json.dump(auc)
 
-    return avg_loss, accuracy
+    return avg_loss, accuracy, auc
 
 
 
@@ -159,7 +159,7 @@ def train(
         with open("history.json", "w") as f:
             json.dump(history, f, indent=2)
       
-    best_val_loss = float("inf")
+    best_val_auc = -float('inf')
     patience_counter = 0
     swa_model = AveragedModel(model)
     swa_start = int(epochs * 0.75)
@@ -169,9 +169,10 @@ def train(
     for epoch in range(1, epochs + 1):
         t0 = time.time()
 
-        train_loss, train_acc = run_epoch(model, train_loader, criterion, optimizer, DEVICE)
-        val_loss,   val_acc   = run_epoch(model, val_loader,   criterion, None,      DEVICE)
+        train_loss, train_acc, train_auc = run_epoch(model, train_loader, criterion, optimizer, DEVICE)
+        val_loss,   val_acc, val_auc   = run_epoch(model, val_loader,   criterion, None,      DEVICE)
 
+            
         if epoch >= swa_start:
             swa_model.update_parameters(model)
             swa_scheduler.step()
@@ -195,13 +196,13 @@ def train(
         )
 
         # Early stopping + best checkpoint
-        if val_loss < best_val_loss:
-            best_val_loss = val_loss
+        if val_auc > best_val_auc:
+            best_val_auc = val_auc
             patience_counter = 0
             if save_best:
                 torch.save(
                     {"epoch": epoch, "model_state": model.state_dict(),
-                     "val_loss": val_loss, "val_acc": val_acc, "meta": meta},
+                     "val_loss": val_loss, "val_acc": val_acc, "val_auc": val_auc, "meta": meta},
                     ckpt_path,
                 )
                 print(f"  ✓ Saved best checkpoint → {ckpt_path}")
@@ -216,7 +217,8 @@ def train(
         model.load_state_dict(ckpt["model_state"])
         print(f"\nLoaded best checkpoint (epoch {ckpt['epoch']}, val_loss={ckpt['val_loss']:.4f})")
 
-    test_loss, test_acc = run_epoch(model, test_loader, criterion, None, DEVICE)
+    update_bn(train_loader, swa_model, device=DEVICE)
+    test_loss, test_acc = run_epoch(swa_model, test_loader, criterion, None, DEVICE)
     print(f"\nTest  loss: {test_loss:.4f}  |  Test  acc: {test_acc:.3f}")
     
     with open("history.json", "w") as f:
@@ -341,7 +343,7 @@ if __name__ == "__main__":
     parser.add_argument("--model",      type=str,   default="transformer",
                         choices=["transformer", "cnn", "bilstm", "svm"],
                         help="Which model architecture to train")
-    parser.add_argument("--epochs",     type=int,   default=200)
+    parser.add_argument("--epochs",     type=int,   default=80)
     parser.add_argument("--lr",         type=float, default=1e-4)
     parser.add_argument("--batch_size", type=int,   default=64)
     parser.add_argument("--patience",   type=int,   default=7)
