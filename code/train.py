@@ -152,7 +152,7 @@ def train(
     try:
         with open("history.json", "r") as file:
             history = json.load(file)
-    except(FileNotFoundError, json.DecodeError):
+    except(FileNotFoundError, json.JSONDecodeError):
         history = history_default
         with open("history.json", "w") as f:
             json.dump(f, history, indent=2)
