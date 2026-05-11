@@ -146,16 +146,14 @@ def train(
                 "cnn": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
                 "transformer": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
                 "bilstm": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []}
-                }
-
-            
+                }         
     try:
         with open("history.json", "r") as file:
             history = json.load(file)
     except(FileNotFoundError, json.JSONDecodeError):
         history = history_default
         with open("history.json", "w") as f:
-            json.dump(f, history, indent=2)
+            json.dump(history, f, indent=2)
       
     best_val_loss = float("inf")
     patience_counter = 0
