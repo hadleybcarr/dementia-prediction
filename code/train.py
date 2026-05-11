@@ -277,7 +277,7 @@ def run_shap_analysis(model, train_loader, test_loader, meta,
         
     wrapped = _Wrap(model).to(device).eval()
     explainer = shap.GradientExplainer(wrapped, background)
-    shap_vals = explainer.shap_vals(explain)
+    shap_vals = explainer.shap_values(explain)
 
     if isinstance(shap_vals, list):
         shap_vals = shap_vals[0]
