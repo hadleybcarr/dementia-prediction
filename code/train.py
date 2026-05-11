@@ -92,7 +92,7 @@ def train(
     epochs:     int = 60,
     lr:         float = 1e-4,
     batch_size: int = 64,
-    patience:   int = 7,        # early stopping patience
+    patience:   int = 12,        # early stopping patience
     pos_weight: float = 1.0,    # increase if dataset is imbalanced
     save_best:  bool = True,
 ):
@@ -210,6 +210,7 @@ def train(
             patience_counter += 1
             if patience_counter >= patience:
                 print(f"\nEarly stopping at epoch {epoch} (no improvement for {patience} epochs).")
+                print("Best AUC was", best_val_auc)
                 break
 
     if save_best and ckpt_path.exists():
@@ -230,7 +231,7 @@ def train(
           f"min={param.min().item():.4f}, "
           f"max={param.max().item():.4f}")
          
-    if model != "svm":
+    if model_name != "svm":
         run_shap_analysis(model, train_loader, test_loader, meta, model_name, out_path=f"shap_{model_name}.png")
 
     return {
@@ -346,9 +347,6 @@ if __name__ == "__main__":
     parser.add_argument("--epochs",     type=int,   default=80)
     parser.add_argument("--lr",         type=float, default=1e-4)
     parser.add_argument("--batch_size", type=int,   default=64)
-    parser.add_argument("--patience",   type=int,   default=7)
-    parser.add_argument("--pos_weight", type=float, default=1.0,
-                        help="Positive class weight for BCEWithLogitsLoss")
     args = parser.parse_args()
 
     results = train(
