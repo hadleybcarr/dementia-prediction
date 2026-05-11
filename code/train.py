@@ -133,8 +133,8 @@ def train(
     )
 
     warmup_epochs = max(2,epochs //10)
-    warmup = LinearLR(optimizer, start_factor=0.1, total_iters=warmup_epochs)
     optimizer = AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
+    warmup = LinearLR(optimizer, start_factor=0.1, total_iters=warmup_epochs)
     cosine = CosineAnnealingLR(optimizer, T_max=epochs-warmup_epochs, eta_min=lr / 100)
     scheduler = SequentialLR(optimizer, [warmup, cosine], milestones=[warmup_epochs])
 
