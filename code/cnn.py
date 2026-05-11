@@ -32,7 +32,7 @@ class DementiaCNN(nn.Module):
         self.n_temporal = n_features - n_demo       
         self.mask_idx = mask_idx
 
-        self.stem == nn.Sequential(
+        self.stem = nn.Sequential(
             nn.Conv1d(self.n_temporal, channels, kernel_size=1),
             nn.GroupNorm(8, channels),
             nn.GELU(),
