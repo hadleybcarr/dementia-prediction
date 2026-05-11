@@ -7,7 +7,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.optim import AdamW
-from torch.optim.lr_scheduler import CosineAnnealingLR
+from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
+from torch.optim.swa_utils import SWALR, AveragedModel
 import json 
 from sklearn.metrics import roc_auc_score
 
@@ -88,7 +89,7 @@ def run_epoch(model, loader, criterion, optimizer=None, device=DEVICE):
 
 def train(
     model_name: str = "transformer",
-    epochs:     int = 30,
+    epochs:     int = 60,
     lr:         float = 1e-4,
     batch_size: int = 64,
     patience:   int = 7,        # early stopping patience
@@ -131,8 +132,11 @@ def train(
         pos_weight=torch.tensor([pos_weight], device=DEVICE)
     )
 
+    warmup_epochs = max(2,epochs //10)
+    warmup = LinearLR(optimizer, start_factor=0.1, total_iters=warmup_epochs)
     optimizer = AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
-    scheduler = CosineAnnealingLR(optimizer, T_max=epochs, eta_min=lr / 100)
+    cosine = CosineAnnealingLR(optimizer, T_max=epochs-warmup_epochs, eta_min=lr / 100)
+    scheduler = SequentialLR(optimizer, [warmup, cosine], milestones=[warmup_epochs])
 
     #scheduler = torch.optim.lr_scheduler.OneCycleLR(
     #optimizer, max_lr=lr, epochs=epochs, steps_per_epoch=len(train_loader),
@@ -157,6 +161,10 @@ def train(
       
     best_val_loss = float("inf")
     patience_counter = 0
+    swa_model = AveragedModel(model)
+    swa_start = int(epochs * 0.75)
+    swa_scheduler = SWALR(optimizer, swa_lr = lr/10)
+
 
     for epoch in range(1, epochs + 1):
         t0 = time.time()
@@ -164,7 +172,11 @@ def train(
         train_loss, train_acc = run_epoch(model, train_loader, criterion, optimizer, DEVICE)
         val_loss,   val_acc   = run_epoch(model, val_loader,   criterion, None,      DEVICE)
 
-        scheduler.step()
+        if epoch >= swa_start:
+            swa_model.update_parameters(model)
+            swa_scheduler.step()
+        else:
+            scheduler.step()
 
         history[model_name]["train_loss"].append(train_loss)
         history[model_name]["val_loss"].append(val_loss)

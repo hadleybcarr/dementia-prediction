@@ -80,7 +80,7 @@ def build_cnn(meta:dict):
     return DementiaCNN(n_features=num_vitals, n_demo=2, n_timesteps=24, channels=96, dilations=(1,2,4), dropout=0.2)
 
 if __name__ == "__main__":
-    model = DementiaCNN(n_vitals=5, seq_len=24)
+    model = DementiaCNN(n_features=14, n_timesteps=24)
     print(model)
     total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Trainable parameters: {total_params:,}")
