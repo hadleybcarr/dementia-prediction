@@ -48,7 +48,7 @@ TOKEN_URL     = "https://api.ouraring.com/oauth/token"
 # Persisted token store. ADD tokens.json TO .gitignore!
 TOKEN_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tokens.json")
 
-SCOPES        = "personal daily heartrate spo2 sleep heart_health"
+SCOPES        = "personal daily heartrate spo2 sleep"
 LOOKBACK_DAYS = 7
 
 
@@ -190,7 +190,6 @@ def fetch_vitals() -> Dict[str, Any]:
 
     vitals = {
         "restingHR": s("lowest_heart_rate"),
-        "hrv":       s("average_hrv"),
         "spo2":      ((spo2_latest or {}).get("spo2_percentage") or {}).get("average"),
         "bodyTemp":  (readiness_latest or {}).get("temperature_deviation"),
         "respRate":  s("average_breath"),
