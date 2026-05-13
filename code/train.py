@@ -32,7 +32,7 @@ def get_model(model_name: str, meta: dict) -> nn.Module:
         return build_cnn(meta)
     elif model_name in ("bilstm", "bi-lstm", "bi_lstm"):
         return build_bilstm(meta)
-    elif model_name in "svm":
+    elif model_name == "svm":
         pass
     else:
         raise ValueError(f"Unknown model '{model_name}'. Choose: transformer | cnn | bilstm")
@@ -172,7 +172,7 @@ def train(
         train_loss, train_acc, train_auc = run_epoch(model, train_loader, criterion, optimizer, DEVICE)
         val_loss,   val_acc, val_auc   = run_epoch(model, val_loader,   criterion, None,      DEVICE)
         update_bn(train_loader, swa_model, device=DEVICE)
-        s_loss, s_acc, s_auc = run_epoch(swa_model, val_loader, criterion, optimizer, DEVICE)
+        s_loss, s_acc, s_auc = run_epoch(swa_model, val_loader, criterion, None, DEVICE)
         best = swa_model if s_auc >= val_auc else model
 
             
@@ -221,7 +221,7 @@ def train(
         model.load_state_dict(ckpt["model_state"])
         print(f"\nLoaded best checkpoint (epoch {ckpt['epoch']}, val_loss={ckpt['val_loss']:.4f})")
 
-    test_loss, test_acc = run_epoch(best, test_loader, criterion, None, DEVICE)
+    test_loss, test_acc, test_auc = run_epoch(best, test_loader, criterion, None, DEVICE)
     print(f"\nTest  loss: {test_loss:.4f}  |  Test  acc: {test_acc:.3f}")
     
     with open("history.json", "w") as f:
