@@ -61,7 +61,7 @@ N_VITALS  = 4       # raw vital sign channels
 N_DEMO_CHANNELS  = 2         # age + sex
 USE_MASK_CHANNELS = False
 TOTAL_CHANNELS   = N_VITALS + (N_VITALS if USE_MASK_CHANNELS else 0) + N_DEMO_CHANNELS  # vitals + mask + demo = 14
-MIN_VITALS_PER_HOUR = 5
+MIN_VITALS_PER_HOUR = 4
 CHUNK_SIZE       = 500_000
 SEED             = 42
 
