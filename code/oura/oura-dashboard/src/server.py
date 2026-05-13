@@ -29,11 +29,13 @@ import datetime as dt
 import webbrowser
 from urllib.parse import urlencode
 from typing import Any, Dict, Optional
+import torch 
 
 import requests
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+import numpy as np
 
 load_dotenv()
 
@@ -50,7 +52,22 @@ TOKEN_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tokens.js
 
 SCOPES        = "personal daily heartrate spo2 sleep"
 LOOKBACK_DAYS = 7
+CKPT_DIR = "../../checkpoints"
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+DEFAULT_AGE = 70
+DEFAULT_SEX = 0
 
+#TODO: changes to what the consumer presses on the client-facing screen
+def _load_torch_checkpoint(train_name: str, model:str) -> Optional[dict]:
+    path = CKPT_DIR / f"best_{train_name}.pt"
+    if not path.exists():
+        print(f"  · skip {train_name}: {path} not found")
+        return None
+    ckpt = torch.load(path, map_location=DEVICE, weights_only=False)
+    model.load_state_dict(ckpt["model_state"])
+    model.eval()
+    return {"model": model, "meta": ckpt["meta"]}
+ 
 
 # ── Token storage ─────────────────────────────────────────────────────────────
 def save_tokens(access_token: str, refresh_token: str) -> None:
@@ -195,12 +212,16 @@ def fetch_vitals() -> Dict[str, Any]:
         "respRate":  s("average_breath"),
     }
 
-    return {
-        "vitals":     vitals,
-        "riskScores": {"CNN": 0.78, "LSTM": 0.72, "Transformer": 0.81, "SVM": 0.65},
-        "confidence": {"CNN": 0.92, "LSTM": 0.88, "Transformer": 0.94, "SVM": 0.79},
-        "as_of":      dt.datetime.utcnow().isoformat(timespec="seconds") + "Z",
-    }
+    T = 24  # hours; must be >= meta["seq_len"] (see your data_utils)
+    rng = np.random.default_rng(0)
+    input = np.stack([
+        np.full(T, vitals["restingHR"])  + rng.normal(0, 3, T),    # heart_rate
+        np.full(T, vitals["spo2"])  + rng.normal(0, 0.5, T),  # spo2
+        np.full(T, vitals["respRate"])  + rng.normal(0, 0.4, T),  # resp_rate
+    ], axis=1).astype(np.float32)
+    
+    return input
+
 
 
 @app.get("/api/vitals")
