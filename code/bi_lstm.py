@@ -129,7 +129,7 @@ class DementiaBiLSTM(nn.Module):
         combined = torch.cat([context], dim=-1)
         logits   = self.classifier(combined).squeeze(-1)
         d_logits = self.demo_mlp(demo)
-        out = self.haed(torch.cat([logits, d_logits], dim=-1))
+        out = self.head(torch.cat([logits, d_logits], dim=-1))
         return out.squeeze(-1)
 
     def forward_with_attention(self, vitals: torch.Tensor, icd: torch.Tensor):
