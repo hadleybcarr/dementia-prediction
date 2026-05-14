@@ -114,7 +114,7 @@ class DementiaTransformer(nn.Module):
             dim_feedforward=dim_ff,
             dropout=dropout,
             batch_first=True,
-            norm_first=True,      # Pre-LN for training stability
+            norm_first=True,      
         )
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=n_layers)
 
@@ -122,7 +122,24 @@ class DementiaTransformer(nn.Module):
             nn.Linear(d_model, 128),
             nn.ReLU(),
             nn.Dropout(dropout),
-            nn.Linear(128, 1),
+        )
+
+        demo_dim = 32
+        self.demo_mlp = nn.Sequential(
+            nn.Linear(n_demo, demo_dim), 
+            nn.GELU(),
+            nn.Dropout(0.5),
+            nn.Linear(demo_dim, demo_dim)
+        )
+        
+        fused_dim = 128 + demo_dim #128 is the # of channels from classifier
+        self.head = nn.Sequential(
+            nn.LayerNorm(fused_dim),
+            nn.Dropout(dropout),
+            nn.Linear(fused_dim, 128),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(128,1),
         )
 
     def forward(self, vitals: torch.Tensor) -> torch.Tensor:
@@ -132,27 +149,21 @@ class DementiaTransformer(nn.Module):
         Returns:
           logits : (batch,)  — raw scores (apply sigmoid for probabilities)
         """
-        batch = vitals.size(0)
+        temporal = x[:, :, :self.n_temporal].permute(0, 2, 1)   # (B, 12, T)
+        demo     = x[:, 0, self.n_temporal:] 
 
-        # Project vitals to d_model
-        x = self.input_proj(vitals)                       # (B, T, d_model)
-
-        # Prepend [CLS] token
-        cls = self.cls_token.expand(batch, -1, -1)        # (B, 1, d_model)
+        x = self.input_proj(temporal)                       # (B, T, d_model)
+        cls = self.cls_token.expand(temporal, -1, -1)        # (B, 1, d_model)
         x   = torch.cat([cls, x], dim=1)                  # (B, T+1, d_model)
-
-        # Add positional encoding
         x = self.pos_enc(x)
-
-        # Transformer encoder
         x = self.encoder(x)                               # (B, T+1, d_model)
-
-        # Extract [CLS] representation
         cls_out = x[:, 0, :]                              # (B, d_model)
-
-        # Concatenate and classify
         logits   = self.classifier(cls_out).squeeze(-1)  # (B,)
-        return logits
+        pooled = logits.mean(axis=-1)
+        d_logits = self.demo_mlp(demo)
+        out = self.head(torch.cat([pooled, d_logits], dim=-1))
+        return out.squeeze(-1)
+
 
 
 def build_transformer(meta: dict, **kwargs) -> DementiaTransformer:

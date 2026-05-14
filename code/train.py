@@ -112,11 +112,6 @@ def run_epoch(model, loader, criterion, optimizer=None, device=DEVICE):
     all_probs  = np.concatenate(all_probs)
     all_labels = np.concatenate(all_labels)
     auc = roc_auc_score(all_labels, all_probs) if len(np.unique(all_labels)) > 1 else float("nan")
-
-    ps, rs, ts = precision_recall_curve(all_labels.astype(np.int32), all_probs.astype(np.int32))
-    f1s = 2 * ps[:-1] * rs[:-1] / (ps[:-1] + rs[:-1] + 1e-12)
-    best_idx = int(np.argmax(f1s))
-    threshold = float(ts[best_idx])
     threshold = 0.5
     all_preds = (all_probs >= threshold).astype(np.int32)
  
@@ -271,8 +266,9 @@ def train(
             json.dump(history, f)
 
     for name, param in model.named_parameters():
+         std_val = param.std(unbiased=False).item() if param.numel() > 0 else float("nan")
          print(f"{name}: mean={param.mean().item():.4f}, "
-          f"std={param.std().item():.4f}, "
+          f"std={std_val:.4f}, "
           f"min={param.min().item():.4f}, "
           f"max={param.max().item():.4f}")
          
