@@ -62,7 +62,7 @@ class DementiaBiLSTM(nn.Module):
         self.n_temporal = 6
 
         self.input_proj = nn.Sequential(
-            nn.Linear(n_vitals, hidden_dim),
+            nn.Linear(self.n_temporal, hidden_dim),
             nn.LayerNorm(hidden_dim),
             nn.ReLU(),
         )
