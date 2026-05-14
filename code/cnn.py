@@ -41,14 +41,14 @@ class DementiaCNN(nn.Module):
         ])
 
         demo_dim = 32
-        self.demo_mlp = nn.Sequential(
+        '''self.demo_mlp = nn.Sequential(
             nn.Linear(n_demo, demo_dim), 
             nn.GELU(),
             nn.Dropout(0.3),
             nn.Linear(demo_dim, demo_dim)
-        )
+        )'''
 
-        fused_dim = channels + demo_dim
+        fused_dim = channels #+ demo_dim
         self.head = nn.Sequential(
             nn.LayerNorm(fused_dim),
             nn.Dropout(dropout),
@@ -67,8 +67,9 @@ class DementiaCNN(nn.Module):
         h = self.stem(temporal)
         h = self.blocks(h)
         pooled = h.mean(dim=-1)
-        demo_h = self.demo_mlp(demo)
-        out = self.head(torch.cat([pooled, demo_h], dim=-1))
+        #demo_h = self.demo_mlp(demo)
+        #out = self.head(torch.cat([pooled, demo_h], dim=-1))
+        out = self.head(pooled)
         return out.squeeze(-1)
 
 
