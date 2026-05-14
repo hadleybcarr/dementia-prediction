@@ -36,20 +36,17 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import numpy as np
+from pathlib import Path
 
 load_dotenv()
 
 CLIENT_ID     = os.environ.get("CLIENT_ID")
 CLIENT_SECRET = os.environ.get("CLIENT_SECRET")
 REDIRECT_URI  = os.environ.get("REDIRECT_URI")
-
 OURA_BASE     = "https://api.ouraring.com/v2/usercollection"
 AUTHORIZE_URL = "https://cloud.ouraring.com/oauth/authorize"
 TOKEN_URL     = "https://api.ouraring.com/oauth/token"
-
-# Persisted token store. ADD tokens.json TO .gitignore!
 TOKEN_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tokens.json")
-
 SCOPES        = "personal daily heartrate spo2 sleep"
 LOOKBACK_DAYS = 7
 CKPT_DIR = "../../checkpoints"
@@ -57,19 +54,32 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 DEFAULT_AGE = 70
 DEFAULT_SEX = 0
 
-#TODO: changes to what the consumer presses on the client-facing screen
-def _load_torch_checkpoint(train_name: str, model:str) -> Optional[dict]:
-    path = CKPT_DIR / f"best_{train_name}.pt"
-    if not path.exists():
-        print(f"  · skip {train_name}: {path} not found")
-        return None
-    ckpt = torch.load(path, map_location=DEVICE, weights_only=False)
-    model.load_state_dict(ckpt["model_state"])
-    model.eval()
-    return {"model": model, "meta": ckpt["meta"]}
+def load_models():
+    models = ["cnn", "transformer", "bilstm"]
+    for model_name in models:
+        path = CKPT_DIR / f"best_{model_name}.pt"
+        ckpt = torch.load(path, map_location=DEVICE, weights_only=False)
+        meta = ckpt["meta"]
+        
+
+
+def load_model_checkpoints():
+    checkpoints = {
+        "cnn": {"states": {}, "meta": []},
+        "transformer": {"states": {}, "meta": []},
+        "bilstm": {"states": {}, "meta": []}
+    }
+    models = ["cnn", "transformer", "bilstm"]
+    for model in models:
+        path = CKPT_DIR / f"best_{model}.pt"
+        ckpt = torch.load(path, map_location=DEVICE, weights_only=False)
+        model.load_state_dict(ckpt["model_state"])
+        model.eval()
+        checkpoints[model]["meta"] = ckpt["meta"]
+    
+    return checkpoints
  
 
-# ── Token storage ─────────────────────────────────────────────────────────────
 def save_tokens(access_token: str, refresh_token: str) -> None:
     with open(TOKEN_FILE, "w") as f:
         json.dump({
@@ -78,9 +88,9 @@ def save_tokens(access_token: str, refresh_token: str) -> None:
             "saved_at":      dt.datetime.utcnow().isoformat(timespec="seconds") + "Z",
         }, f, indent=2)
     try:
-        os.chmod(TOKEN_FILE, 0o600)  # owner read/write only
+        os.chmod(TOKEN_FILE, 0o600) 
     except OSError:
-        pass  # non-POSIX filesystems
+        pass 
 
 
 def load_tokens() -> Optional[Dict[str, str]]:
@@ -90,7 +100,6 @@ def load_tokens() -> Optional[Dict[str, str]]:
         return json.load(f)
 
 
-# ── OAuth flow (interactive, run once) ────────────────────────────────────────
 def run_interactive_auth() -> None:
     if not (CLIENT_ID and CLIENT_SECRET and REDIRECT_URI):
         sys.exit("CLIENT_ID, CLIENT_SECRET, REDIRECT_URI must all be set in .env")
@@ -142,7 +151,6 @@ def refresh_access_token() -> str:
     return new_tokens["access_token"]
 
 
-# ── Oura helper with auto-refresh on 401 ──────────────────────────────────────
 def oura_get(path: str, params: Dict[str, Any]) -> Dict[str, Any]:
     tokens = load_tokens()
     if not tokens:
@@ -168,8 +176,6 @@ def oura_get(path: str, params: Dict[str, Any]) -> Dict[str, Any]:
         raise HTTPException(r.status_code, f"Oura {path}: {r.text}")
     return r.json()
 
-
-# ── FastAPI app ───────────────────────────────────────────────────────────────
 app = FastAPI(title="Vitals Dashboard API")
 app.add_middleware(
     CORSMiddleware,
@@ -177,7 +183,6 @@ app.add_middleware(
     allow_methods=["GET"],
     allow_headers=["*"],
 )
-
 
 def _latest(items: list, time_keys=("bedtime_end", "day")) -> Optional[Dict[str, Any]]:
     if not items:
@@ -212,12 +217,12 @@ def fetch_vitals() -> Dict[str, Any]:
         "respRate":  s("average_breath"),
     }
 
-    T = 24  # hours; must be >= meta["seq_len"] (see your data_utils)
+    T = 24  
     rng = np.random.default_rng(0)
     input = np.stack([
-        np.full(T, vitals["restingHR"])  + rng.normal(0, 3, T),    # heart_rate
-        np.full(T, vitals["spo2"])  + rng.normal(0, 0.5, T),  # spo2
-        np.full(T, vitals["respRate"])  + rng.normal(0, 0.4, T),  # resp_rate
+        np.full(T, vitals["restingHR"])  + rng.normal(0, 3, T),    
+        np.full(T, vitals["spo2"])  + rng.normal(0, 0.5, T),  
+        np.full(T, vitals["respRate"])  + rng.normal(0, 0.4, T), 
     ], axis=1).astype(np.float32)
     
     return input
@@ -235,7 +240,6 @@ def health():
     return {"ok": True, "tokens_present": load_tokens() is not None}
 
 
-# ── CLI ───────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     if len(sys.argv) >= 2 and sys.argv[1] == "auth":
         run_interactive_auth()

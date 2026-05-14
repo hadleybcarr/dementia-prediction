@@ -197,7 +197,7 @@ def train(
             json.dump(history, f, indent=2)
 
     history[model_name] = {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": [], "train_auc": [], "train_precision": [], "t_recall": [], "train_f1": []}
-    
+
     best_val_auc = -float('inf')
     patience_counter = 0
     swa_model = AveragedModel(model)
@@ -239,7 +239,6 @@ def train(
         )
 
         
-        '''NOTE: Option for early stopping w/ patience counter 
         if val_auc > best_val_auc:
             best_val_auc = val_auc
             patience_counter = 0
@@ -252,7 +251,7 @@ def train(
                 print(f"  ✓ Saved best checkpoint → {ckpt_path}")
         else:
             patience_counter += 1
-            if patience_counter >= patience:
+            '''if patience_counter >= patience:
                 print(f"\nEarly stopping at epoch {epoch} (no improvement for {patience} epochs).")
                 print("Best AUC was", best_val_auc)
                 break'''

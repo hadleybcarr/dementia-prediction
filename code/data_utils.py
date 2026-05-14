@@ -55,18 +55,16 @@ DIAGNOSES_PATH   = os.path.join(HOSP_PATH, "diagnoses_icd.csv")
 PATIENTS_PATH    = os.path.join(HOSP_PATH, "patients.csv")
 CHARTEVENTS_PATH = os.path.join(ICU_PATH,  "chartevents.csv")
 
-# ── Config ────────────────────────────────────────────────────────────────────
-SEQ_LEN          = 24        # hourly time steps per patient
-N_VITALS  = 4       # raw vital sign channels
-N_DEMO_CHANNELS  = 2         # age + sex
+
+SEQ_LEN = 24       
+N_VITALS  = 4       
+N_DEMO_CHANNELS  = 2        
 USE_MASK_CHANNELS = False
-TOTAL_CHANNELS   = N_VITALS + (N_VITALS if USE_MASK_CHANNELS else 0) + N_DEMO_CHANNELS  # vitals + mask + demo = 14
+TOTAL_CHANNELS   = N_VITALS + (N_VITALS if USE_MASK_CHANNELS else 0) + N_DEMO_CHANNELS 
 MIN_VITALS_PER_HOUR = 3
 CHUNK_SIZE       = 500_000
 SEED             = 42
 
-# Patients with fewer than this many filtered chart-event rows are dropped.
-# Most non-ICU patients have 0; this keeps anyone with at least a brief stay.
 MIN_CHART_OBSERVATIONS = 50
 
 DEMENTIA_CODES = ("F01", "F02", "F03")
@@ -80,7 +78,7 @@ VITAL_ITEM_IDS = {
     223761: "temperature",
 }
 
-# Clip then min-max scale to [0, 1]
+
 VITAL_BOUNDS = {
     "heart_rate":  (20,  250),
     #"sbp":         (50,  250),
@@ -92,7 +90,6 @@ VITAL_BOUNDS = {
 
 AGE_BOUNDS = (18, 100)
 
-# ── Cache key (auto-invalidates when config changes) ──────────────────────────
 _CONFIG_BLOB = json.dumps({
     "seq_len":   SEQ_LEN,
     "n_vital":   N_VITALS,
@@ -108,7 +105,6 @@ _CONFIG_HASH = hashlib.md5(_CONFIG_BLOB.encode()).hexdigest()[:8]
 CACHE_PATH   = f"./cache/processed_{_CONFIG_HASH}.pt"
 
 
-# ── Cohort & labels ───────────────────────────────────────────────────────────
 def get_subject_labels(diagnoses_path: str) -> pd.DataFrame:
     """
     Returns DataFrame with columns [subject_id, label]:
@@ -146,7 +142,6 @@ def get_subject_labels(diagnoses_path: str) -> pd.DataFrame:
     return labels
 
 
-# ── Demographics ──────────────────────────────────────────────────────────────
 def load_demographics(patients_path: str, subject_ids: np.ndarray) -> pd.DataFrame:
     """
     Returns a DataFrame indexed by subject_id with columns [age, sex],
@@ -170,7 +165,6 @@ def load_demographics(patients_path: str, subject_ids: np.ndarray) -> pd.DataFra
     return df.set_index("subject_id")[["age", "sex"]]
 
 
-# ── Vitals ────────────────────────────────────────────────────────────────────
 def build_vitals_matrix(chartevents_path: str, subject_ids: np.ndarray):
     """
     Reads chartevents in chunks, filters to target subjects and vital itemids,
@@ -215,7 +209,6 @@ def build_vitals_matrix(chartevents_path: str, subject_ids: np.ndarray):
     mask   = np.zeros((n_subj, SEQ_LEN, N_VITALS), dtype=np.float32)
     n_obs  = np.zeros(n_subj, dtype=np.int32)
 
-    # One groupby up front is much faster than the previous per-subject filter.
     groups = df.groupby("subject_id", sort=False)
     sid_to_idx = {sid: i for i, sid in enumerate(subject_ids.tolist())}
 
@@ -248,7 +241,6 @@ def build_vitals_matrix(chartevents_path: str, subject_ids: np.ndarray):
             col = (col - lo) / (hi - lo)
             vitals[i, :, j] = col
 
-    # Fill NaNs: per-patient ffill+bfill, then global column means as last resort.
     for i in range(n_subj):
         seq = pd.DataFrame(vitals[i], columns=vital_names).ffill().bfill()
         vitals[i] = seq.values
@@ -262,7 +254,6 @@ def build_vitals_matrix(chartevents_path: str, subject_ids: np.ndarray):
     return vitals, mask, n_obs
 
 
-# ── Assemble final input ──────────────────────────────────────────────────────
 def build_full_input(
     vitals: np.ndarray,
     mask: np.ndarray,
@@ -297,8 +288,6 @@ def build_full_input(
 
     return out
 
-
-# ── Dataset / DataLoader ──────────────────────────────────────────────────────
 class DementiaDataset(Dataset):
     def __init__(self, x, labels):
         self.x      = x      if isinstance(x, torch.Tensor)      else torch.tensor(x,      dtype=torch.float32)
@@ -342,15 +331,11 @@ def get_dataloaders(
         idx_test  = blob["test"]
         meta      = blob["meta"]
     else:
-        # 1. Cohort + labels
+
         label_df    = get_subject_labels(DIAGNOSES_PATH)
         subject_ids = label_df["subject_id"].values
         labels_arr  = label_df["labels"].values.astype(np.float32)
-
-        # 2. Vitals + missingness mask
         vitals, mask, n_obs = build_vitals_matrix(CHARTEVENTS_PATH, subject_ids)
-
-        # 3. Drop patients with too little real data
         keep = n_obs >= MIN_CHART_OBSERVATIONS
         dropped = int((~keep).sum())
 
@@ -369,13 +354,10 @@ def get_dataloaders(
         print(f"  Cohort after filtering: {len(subject_ids):,} "
             f"({int(labels_arr.sum()):,} pos / {int((1 - labels_arr).sum()):,} neg)")
 
-        # 4. Demographics
         demo_df = load_demographics(PATIENTS_PATH, subject_ids)
 
-        # 5. Assemble full (B, T, 14) tensor
         x_arr = build_full_input(vitals, mask, demo_df, subject_ids)
 
-        # 6. Stratified split
         idx = np.arange(len(labels_arr))
         idx_train, idx_tmp, y_train, y_tmp = train_test_split(
             idx, labels_arr,
@@ -388,14 +370,13 @@ def get_dataloaders(
             idx_tmp, test_size=rel_test, stratify=y_tmp, random_state=SEED,
         )
 
-        # 7. pos_weight from TRAIN ONLY (do not peek at val/test)
         n_pos = float(labels_arr[idx_train].sum())
         n_neg = float(len(idx_train) - n_pos)
         pos_weight = n_neg / max(n_pos, 1.0)
 
         meta = {
             "seq_len":         SEQ_LEN,
-            "n_vitals":        TOTAL_CHANNELS,    # what model constructors read
+            "n_vitals":        TOTAL_CHANNELS,   
             "n_vital_signals": N_VITALS,
             "vital_names":     list(VITAL_ITEM_IDS.values()),
             "pos_weight":      pos_weight,
