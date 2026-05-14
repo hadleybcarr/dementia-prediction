@@ -149,8 +149,8 @@ class DementiaTransformer(nn.Module):
         Returns:
           logits : (batch,)  — raw scores (apply sigmoid for probabilities)
         """
-        temporal = x[:, :, :self.n_temporal].permute(0, 2, 1)   # (B, 12, T)
-        demo     = x[:, 0, self.n_temporal:] 
+        temporal = vitals[:, :, :self.n_temporal].permute(0, 2, 1)   # (B, 12, T)
+        demo     = vitals[:, 0, self.n_temporal:] 
 
         x = self.input_proj(temporal)                       # (B, T, d_model)
         cls = self.cls_token.expand(temporal, -1, -1)        # (B, 1, d_model)
