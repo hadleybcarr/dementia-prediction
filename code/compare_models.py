@@ -13,11 +13,6 @@ METRICS = [
 ]
 
 
-def load_history(path):
-    with open(path, "r") as f:
-        return json.load(f)
-
-
 def plot_metric(history_dict, metric, title, ylabel, save_path):
     plt.figure(figsize=(8, 5))
 
@@ -42,7 +37,6 @@ def plot_all(history_dict, out_dir="comparison_plots"):
     out_dir = Path(out_dir)
     out_dir.mkdir(exist_ok=True, parents=True)
 
-    # 1. Loss curves
     plot_metric(
         history_dict,
         "train_loss",
@@ -59,7 +53,6 @@ def plot_all(history_dict, out_dir="comparison_plots"):
         out_dir / "val_loss.png",
     )
 
-    # 2. Accuracy
     plot_metric(
         history_dict,
         "train_acc",
@@ -76,7 +69,6 @@ def plot_all(history_dict, out_dir="comparison_plots"):
         out_dir / "val_acc.png",
     )
 
-    # 3. AUC
     plot_metric(
         history_dict,
         "train_auc",
@@ -85,7 +77,6 @@ def plot_all(history_dict, out_dir="comparison_plots"):
         out_dir / "train_auc.png",
     )
 
-    # 4. Precision / Recall / F1
     plot_metric(
         history_dict,
         "train_precision",
@@ -171,12 +162,9 @@ def plot_generalization_gap(history_dict, out_dir="comparison_plots"):
     plt.close()
 
 
-def run_all(transformer_path, cnn_path, bilstm_path):
-    history_dict = {
-        "transformer": load_history(transformer_path),
-        "cnn": load_history(cnn_path),
-        "bilstm": load_history(bilstm_path),
-    }
+def run_all():
+    with open("history.json", "r") as f:
+        history_dict = json.load(f)
 
     plot_all(history_dict)
     plot_combined_final_metrics(history_dict)
@@ -186,13 +174,4 @@ def run_all(transformer_path, cnn_path, bilstm_path):
 
 
 if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--transformer")
-    parser.add_argument("--cnn")
-    parser.add_argument("--bilstm")
-
-    args = parser.parse_args()
-
-    run_all(args.transformer, args.cnn, args.bilstm)
+    run_all()
