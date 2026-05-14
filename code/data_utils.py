@@ -47,7 +47,6 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import train_test_split
 
-# ── Paths ─────────────────────────────────────────────────────────────────────
 HOSP_PATH = "/oscar/data/shared/ursa/mimic-iv/hosp/3.1"
 ICU_PATH  = "/oscar/data/shared/ursa/mimic-iv/icu/3.1"
 
@@ -276,14 +275,14 @@ def build_full_input(
         out[:, :, N_VITALS:2*N_VITALS] = mask
 
     demo = demo_df.reindex(subject_ids)
-    age  = demo["age"].fillna(0.5).values.astype(np.float32)   # neutral default
+    age  = demo["age"].fillna(0.5).values.astype(np.float32)  
     sex  = demo["sex"].fillna(0.5).values.astype(np.float32)
 
     mask_int = 1
     if USE_MASK_CHANNELS:
         mask_int = 2
 
-    out[:, :, mask_int*N_VITALS]     = age[:, None]   # broadcast over T
+    out[:, :, mask_int*N_VITALS]     = age[:, None]   
     out[:, :, mask_int*N_VITALS + 1] = sex[:, None]
 
     return out
@@ -379,10 +378,10 @@ def get_dataloaders(
             "n_vitals":         TOTAL_CHANNELS,
             "n_vital_signals":  N_VITALS,
             "vital_names":      list(VITAL_ITEM_IDS.values()),
-            "vital_bounds":     {k: list(v) for k, v in VITAL_BOUNDS.items()},   # NEW
-            "age_bounds":       list(AGE_BOUNDS),                                # NEW
-            "use_mask_channels": USE_MASK_CHANNELS,                              # NEW
-            "channel_order":    list(VITAL_ITEM_IDS.values()) + ["age", "sex"],  # NEW — explicit
+            "vital_bounds":     {k: list(v) for k, v in VITAL_BOUNDS.items()},  
+            "age_bounds":       list(AGE_BOUNDS),                                
+            "use_mask_channels": USE_MASK_CHANNELS,                             
+            "channel_order":    list(VITAL_ITEM_IDS.values()) + ["age", "sex"],  
             "pos_weight":       pos_weight,
             "n_train":          len(idx_train),
             "n_val":            len(idx_val),

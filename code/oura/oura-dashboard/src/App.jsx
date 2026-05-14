@@ -1,17 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 
-/**
- * VitalsDashboard
- * ----------------
- * Editorial dashboard combining Oura-streamed vitals with a multi-architecture
- * dementia-risk readout. Fetches /api/vitals on mount; falls back to
- * placeholder values if the backend isn't reachable, so the page still
- * renders during dev.
- *
- * Backend: FastAPI on http://localhost:8000 (see server.py).
- * Override with VITE_API_URL or REACT_APP_API_URL.
- */
-
 const API_URL =
   (import.meta?.env?.VITE_API_URL) ||
   (typeof process !== "undefined" && process.env?.REACT_APP_API_URL) ||
@@ -44,7 +32,7 @@ export default function VitalsDashboard() {
   const [prediction, setPrediction] = useState(null);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState(null);
-  const [arch,       setArch]       = useState(null);   // start unset; chosen after first load
+  const [arch,       setArch]       = useState(null);  
 
   useEffect(() => {
     let cancelled = false;

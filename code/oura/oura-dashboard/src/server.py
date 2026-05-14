@@ -188,9 +188,8 @@ def _nan_to_none(arr):
             for x in arr]
 
 def fetch_hourly_window() -> dict:
-    # 1. timezone-aware "now"; utcnow() is deprecated in 3.12+ (you're on 3.14)
     now_utc   = dt.datetime.now(dt.timezone.utc)
-    start_utc = now_utc - dt.timedelta(hours=T_HOURS + 6)   # small buffer
+    start_utc = now_utc - dt.timedelta(hours=T_HOURS + 6)   
 
     today   = dt.date.today()
     start_d = (today - dt.timedelta(days=2)).isoformat()
@@ -205,7 +204,7 @@ def fetch_hourly_window() -> dict:
 
     if hr_points:
         end_hour = now_utc.replace(minute=0, second=0, microsecond=0)
-        buckets  = [[] for _ in range(T_HOURS)]                 # list-of-lists is cleaner than dict
+        buckets  = [[] for _ in range(T_HOURS)]                 
         for p in hr_points:
             ts = dt.datetime.fromisoformat(p["timestamp"].replace("Z", "+00:00"))
             delta_h = int((end_hour - ts).total_seconds() // 3600)
@@ -221,14 +220,14 @@ def fetch_hourly_window() -> dict:
 
     spo2_latest      = _latest(spo2_resp.get("data", []), time_keys=("day",)) or {}
     sleep_latest     = _latest(sleep.get("data", []))                          or {}
-    readiness_latest = _latest(readiness.get("data", []), time_keys=("day",))  or {}  # 2. missing `or {}`
+    readiness_latest = _latest(readiness.get("data", []), time_keys=("day",))  or {}  #
 
     return {
         "hr_series":   _nan_to_none(hr_series.tolist()),
         "spo2":        (spo2_latest.get("spo2_percentage") or {}).get("average"),
         "resp_rate":   sleep_latest.get("average_breath"),
         "temperature": readiness_latest.get("temperature_deviation"),
-        "hr_coverage": int(np.sum(~np.isnan(hr_series))),       # 3. diagnostic — how many of 24h had data
+        "hr_coverage": int(np.sum(~np.isnan(hr_series))),       
     }
 
 
@@ -247,7 +246,6 @@ def _impute(series, fallback):
     arr = np.asarray(series, dtype=np.float32)
     if np.all(np.isnan(arr)):
         return np.full_like(arr, fallback)
-    # forward-fill then back-fill
     mask = np.isnan(arr)
     idx = np.where(~mask, np.arange(len(arr)), 0)
     np.maximum.accumulate(idx, out=idx)
@@ -279,7 +277,7 @@ def build_input(window: dict, meta: dict) -> torch.Tensor:
     age_lo, age_hi = meta.get("age_bounds", [18, 100])
     age_scaled = (np.clip(DEFAULT_AGE, age_lo, age_hi) - age_lo) / (age_hi - age_lo)
     cols.append(np.full(T_HOURS, age_scaled, np.float32))
-    cols.append(np.full(T_HOURS, float(DEFAULT_SEX),  np.float32))  # already in {0, 0.5, 1}
+    cols.append(np.full(T_HOURS, float(DEFAULT_SEX),  np.float32))  
 
     x = np.stack(cols, axis=1)
     print("input is", x)
