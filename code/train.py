@@ -189,7 +189,7 @@ def train(
     
        
     try:
-        with open("full_stats_history.json", "r") as file:
+        with open("history.json", "r") as file:
             history = json.load(file)
     except(FileNotFoundError, json.JSONDecodeError):
         history = history_default
