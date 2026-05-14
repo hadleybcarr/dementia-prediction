@@ -117,7 +117,7 @@ def run_epoch(model, loader, criterion, optimizer=None, device=DEVICE):
     f1s = 2 * ps[:-1] * rs[:-1] / (ps[:-1] + rs[:-1] + 1e-12)
     best_idx = int(np.argmax(f1s))
     threshold = float(ts[best_idx])
-
+    threshold = 0.5
     all_preds = (all_probs >= threshold).astype(np.int32)
  
     precision = precision_score(all_labels.astype(np.int32), all_preds, zero_division=0)
