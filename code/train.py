@@ -10,7 +10,7 @@ from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
 from torch.optim.swa_utils import SWALR, AveragedModel, update_bn
 import json 
-from sklearn.metrics import roc_auc_score, precision_score,recall_score, f1_score
+from sklearn.metrics import roc_auc_score, precision_score,recall_score, f1_score, precision_recall_curve
 
 from data_utils import get_dataloaders
 from transformer import build_transformer
@@ -37,6 +37,16 @@ def get_model(model_name: str, meta: dict) -> nn.Module:
     else:
         raise ValueError(f"Unknown model '{model_name}'. Choose: transformer | cnn | bilstm")
 
+def age_baseline(train_loader, val_loader, test_loader, n_static:int=2, static_names=("age", "sex")):
+    "Training a logistic regression on age and sex to assess the difference in the AUROC if just trained on age/sex"
+    
+    def extract(loader):
+        xs, ys = [], []
+        for vitals, labels in loader:
+            static = vitals[:, 0, -n_static:].cpu().numpy()
+            xs.append(static)
+            ys.append(labels.cpu().numpy().reshape(-1))
+        return np.concatenate(xs), np.concatenate(ys)
 
 def run_epoch(model, loader, criterion, optimizer=None, device=DEVICE):
     print("Training", model,"...")
@@ -77,9 +87,17 @@ def run_epoch(model, loader, criterion, optimizer=None, device=DEVICE):
     all_probs  = np.concatenate(all_probs)
     all_labels = np.concatenate(all_labels)
     auc = roc_auc_score(all_labels, all_probs) if len(np.unique(all_labels)) > 1 else float("nan")
-    precision = precision_score(all_labels.astype(np.int32), all_probs.astype(np.int32), zero_division=0)
-    recall = recall_score(all_labels.astype(np.int32), all_probs.astype(np.int32), zero_division=0)
-    f1 = f1_score(all_labels.astype(np.int32), all_probs.astype(np.int32), zero_division=0)
+
+    ps, rs, ts = precision_recall_curve(all_labels.astype(np.int32), all_probs.astype(np.int32))
+    f1s = 2 * ps[:-1] * rs[:-1] / (ps[:-1] + rs[:-1] + 1e-12)
+    best_idx = int(np.argmax(f1s))
+    threshold = float(ts[best_idx])
+
+    all_preds = (all_probs >= threshold).astype(np.int32)
+ 
+    precision = precision_score(all_labels.astype(np.int32), all_preds, zero_division=0)
+    recall = recall_score(all_labels.astype(np.int32), all_preds, zero_division=0)
+    f1 = f1_score(all_labels.astype(np.int32), all_preds, zero_division=0)
 
     print(f"AUC is {auc} \n Precision is {precision} \n Recall is {recall} \n F1-Score is {f1}")
     return avg_loss, accuracy, auc, precision, recall, f1

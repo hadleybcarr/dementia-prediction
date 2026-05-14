@@ -12,8 +12,6 @@ class ResTCNBlock(nn.Module):
         self.norm1 = nn.GroupNorm(8, channels)
         self.norm2 = nn.GroupNorm(8, channels)
         self.drop = nn.Dropout(dropout)
-        #self.pool1 = nn.AdaptiveAvgPool1d()
-        #self.pool2 = nn.AdaptiveAvgPool1d()
         self.act = nn.GELU()
 
     def forward(self,x):
