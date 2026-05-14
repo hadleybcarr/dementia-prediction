@@ -128,7 +128,7 @@ class DementiaTransformer(nn.Module):
         self.demo_mlp = nn.Sequential(
             nn.Linear(n_demo, demo_dim), 
             nn.GELU(),
-            nn.Dropout(0.5),
+            nn.Dropout(0.75),
             nn.Linear(demo_dim, demo_dim)
         )
         
@@ -149,7 +149,6 @@ class DementiaTransformer(nn.Module):
         Returns:
           logits : (batch,)  — raw scores (apply sigmoid for probabilities)
         """
-        print("Vitals shape", vitals.shape)
         temporal = vitals[:, :, :self.n_temporal]  # (B, 12, T)
         demo     = vitals[:, 0, self.n_temporal:] 
 
