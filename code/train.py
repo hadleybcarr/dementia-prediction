@@ -21,6 +21,7 @@ from bi_lstm import build_bilstm
 from svm_model import svm_train
 import shap 
 import matplotlib.pyplot as plt
+import torch.backends.cudnn as cudnn
 
 CHECKPOINT_DIR = Path("./checkpoints")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -332,8 +333,9 @@ def run_shap_analysis(model, train_loader, test_loader, meta,
             return out.unsqueeze(-1) if out.ndim == 1 else out
         
     wrapped = _Wrap(model).to(device).eval()
-    explainer = shap.GradientExplainer(wrapped, background)
-    shap_vals = explainer.shap_values(explain)
+    with cudnn.flags(enabled=False):
+        explainer = shap.GradientExplainer(wrapped, background)
+        shap_vals = explainer.shap_values(explain)
 
     if isinstance(shap_vals, list):
         shap_vals = shap_vals[0]

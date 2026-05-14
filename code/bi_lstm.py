@@ -86,8 +86,27 @@ class DementiaBiLSTM(nn.Module):
             nn.Linear(bilstm_out_dim, 128),
             nn.GELU(),
             nn.Dropout(dropout),
-            nn.Linear(128, 1),
         )
+
+        demo_dim = 32
+        self.demo_mlp = nn.Sequential(
+            nn.Linear(2, demo_dim), 
+            nn.GELU(),
+            nn.Dropout(0.75),
+            nn.Linear(demo_dim, demo_dim)
+        )
+
+        fused_dim = 128 + demo_dim #128 is the # of channels from classifier
+        self.head = nn.Sequential(
+            nn.LayerNorm(fused_dim),
+            nn.Dropout(dropout),
+            nn.Linear(fused_dim, 128),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(128,1),
+        )
+
+
 
     def forward(self, vitals: torch.Tensor):
         """
@@ -99,22 +118,18 @@ class DementiaBiLSTM(nn.Module):
         Optional: also returns attention weights if you want to inspect
                   which time steps the model focused on.
         """
-        # Project input
-        x = self.input_proj(vitals)              # (B, T, hidden_dim)
-
-        # BiLSTM
-        lstm_out, _ = self.lstm(x)               # (B, T, hidden_dim*2)
-
-        # Temporal attention pooling
-        context, attn_weights = self.attention(lstm_out)  # (B, hidden_dim*2)
-
+        temporal = vitals[:, :, :self.n_temporal] 
+        demo     = vitals[:, 0, self.n_temporal:]
+        x = self.input_proj(temporal)              
+        lstm_out, _ = self.lstm(x)    
+        context, attn_weights = self.attention(lstm_out)  
         context = self.post_attn_norm(context)
         context = self.dropout(context)
-
-        # Concatenate and classify
         combined = torch.cat([context], dim=-1)
-        logits   = self.classifier(combined).squeeze(-1)   # (B,)
-        return logits
+        logits   = self.classifier(combined).squeeze(-1)
+        d_logits = self.demo_mlp(demo)
+        out = self.haed(torch.cat([logits, d_logits], dim=-1))
+        return out.squeeze(-1)
 
     def forward_with_attention(self, vitals: torch.Tensor, icd: torch.Tensor):
         """
