@@ -10,7 +10,7 @@ from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
 from torch.optim.swa_utils import SWALR, AveragedModel, update_bn
 import json 
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, precision_score,recall_score, f1_score
 
 from data_utils import get_dataloaders
 from transformer import build_transformer
@@ -77,13 +77,12 @@ def run_epoch(model, loader, criterion, optimizer=None, device=DEVICE):
     all_probs  = np.concatenate(all_probs)
     all_labels = np.concatenate(all_labels)
     auc = roc_auc_score(all_labels, all_probs) if len(np.unique(all_labels)) > 1 else float("nan")
+    precision = precision_score(all_labels, all_probs, zero_division=0)
+    recall = recall_score(all_labels, all_probs, zero_division=0)
+    f1 = f1_score(all_labels, all_probs, zero_division=0)
 
-    print("AUROC is", auc)
-    
-    #with open("auroc.json", "wb") as f:
-    #    json.dump(auc)
-
-    return avg_loss, accuracy, auc
+    print(f"AUC is {auc} \n Precision is {precision} \n Recall is {recall} \n F1-Score is {f1}")
+    return avg_loss, accuracy, auc, precision, recall, f1
 
 
 
@@ -92,8 +91,8 @@ def train(
     epochs:     int = 60,
     lr:         float = 1e-4,
     batch_size: int = 64,
-    patience:   int = 12,        # early stopping patience
-    pos_weight: float = 1.0,    # increase if dataset is imbalanced
+    patience:   int = 12,       
+    pos_weight: float = 1.0,   
     save_best:  bool = True,
 ):
     """
@@ -138,21 +137,19 @@ def train(
     cosine = CosineAnnealingLR(optimizer, T_max=epochs-warmup_epochs, eta_min=lr / 100)
     scheduler = SequentialLR(optimizer, [warmup, cosine], milestones=[warmup_epochs])
 
-    #scheduler = torch.optim.lr_scheduler.OneCycleLR(
-    #optimizer, max_lr=lr, epochs=epochs, steps_per_epoch=len(train_loader),
-#)
-
     CHECKPOINT_DIR.mkdir(exist_ok=True)
     ckpt_path = CHECKPOINT_DIR / f"best_{model_name}.pt"
 
     history_default = {
-                "svm": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
-                "cnn": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
-                "transformer": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []},
-                "bilstm": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []}
-                }         
+                "svm": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": [], "train_auc": [], "train_precision": [], "t_recall": [], "train_f1": []},
+                "cnn": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": [], "train_auc": [], "train_precision": [], "t_recall": [], "train_f1": []},
+                "transformer": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": [], "train_auc": [], "train_precision": [], "t_recall": [], "train_f1": []},
+                "bilstm": {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": [], "train_auc": [], "train_precision": [], "t_recall": [], "train_f1": []},
+                }      
+    
+       
     try:
-        with open("history.json", "r") as file:
+        with open("full_stats_history.json", "r") as file:
             history = json.load(file)
     except(FileNotFoundError, json.JSONDecodeError):
         history = history_default
@@ -169,10 +166,10 @@ def train(
     for epoch in range(1, epochs + 1):
         t0 = time.time()
 
-        train_loss, train_acc, train_auc = run_epoch(model, train_loader, criterion, optimizer, DEVICE)
-        val_loss,   val_acc, val_auc   = run_epoch(model, val_loader,   criterion, None,      DEVICE)
+        train_loss, train_acc, train_auc, t_precision, t_recall, t_f1 = run_epoch(model, train_loader, criterion, optimizer, DEVICE)
+        val_loss,   val_acc, val_auc, v_precision, v_recall, v_f1 = run_epoch(model, val_loader,   criterion, None,      DEVICE)
         update_bn(train_loader, swa_model, device=DEVICE)
-        s_loss, s_acc, s_auc = run_epoch(swa_model, val_loader, criterion, None, DEVICE)
+        s_loss, s_acc, s_auc, s_precision, s_recall, s_f1 = run_epoch(swa_model, val_loader, criterion, None, DEVICE)
         best = swa_model if s_auc >= val_auc else model
 
             
@@ -186,9 +183,10 @@ def train(
         history[model_name]["val_loss"].append(val_loss)
         history[model_name]["train_acc"].append(train_acc)
         history[model_name]["val_acc"].append(val_acc)
-
-
-        print(history)
+        history[model_name]["train_auc"]. append(train_auc)
+        history[model_name]["train_precision"].append(t_precision)
+        history[model_name]["t_recall"].append(t_recall)
+        history[model_name]["train_f1"].append(t_f1)
 
         elapsed = time.time() - t0
         print(
@@ -198,7 +196,8 @@ def train(
             f"| {elapsed:.1f}s"
         )
 
-        # Early stopping + best checkpoint
+        
+        '''NOTE: Option for early stopping w/ patience counter 
         if val_auc > best_val_auc:
             best_val_auc = val_auc
             patience_counter = 0
@@ -214,14 +213,14 @@ def train(
             if patience_counter >= patience:
                 print(f"\nEarly stopping at epoch {epoch} (no improvement for {patience} epochs).")
                 print("Best AUC was", best_val_auc)
-                break
+                break'''
 
     if save_best and ckpt_path.exists():
         ckpt = torch.load(ckpt_path, map_location=DEVICE, weights_only=False)
         model.load_state_dict(ckpt["model_state"])
         print(f"\nLoaded best checkpoint (epoch {ckpt['epoch']}, val_loss={ckpt['val_loss']:.4f})")
 
-    test_loss, test_acc, test_auc = run_epoch(best, test_loader, criterion, None, DEVICE)
+    test_loss, test_acc, test_auc, test_precision, test_recall, test_f1 = run_epoch(best, test_loader, criterion, None, DEVICE)
     print(f"\nTest  loss: {test_loss:.4f}  |  Test  acc: {test_acc:.3f}")
     
     with open("history.json", "w") as f:
