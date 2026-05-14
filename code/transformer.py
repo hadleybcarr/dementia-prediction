@@ -149,6 +149,7 @@ class DementiaTransformer(nn.Module):
         Returns:
           logits : (batch,)  — raw scores (apply sigmoid for probabilities)
         """
+        print("Vitals shape", vitals.shape)
         temporal = vitals[:, :, :self.n_temporal]  # (B, 12, T)
         demo     = vitals[:, 0, self.n_temporal:] 
 
