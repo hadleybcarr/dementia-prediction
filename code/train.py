@@ -11,6 +11,8 @@ from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
 from torch.optim.swa_utils import SWALR, AveragedModel, update_bn
 import json 
 from sklearn.metrics import roc_auc_score, precision_score,recall_score, f1_score, precision_recall_curve
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
 
 from data_utils import get_dataloaders
 from transformer import build_transformer
@@ -47,6 +49,29 @@ def age_baseline(train_loader, val_loader, test_loader, n_static:int=2, static_n
             xs.append(static)
             ys.append(labels.cpu().numpy().reshape(-1))
         return np.concatenate(xs), np.concatenate(ys)
+    
+    x_tr, y_tr = extract(train_loader)
+    x_val, y_val = extract(train_loader)
+    x_test, y_test = extract(train_loader)
+
+    scaler = StandardScaler().fit(x_tr)
+    x_tr_scaled, x_val_scaled, x_test_scaled = scaler.transform(x_tr), scaler.transfrom(x_val), scaler.transform(x_test)
+    clf = LogisticRegression(class_weight="balanced", max_iter=1000)
+    clf.fit(x_tr_scaled, y_tr)
+
+    def report(name, x, y):
+        prob = clf.predict_proba(x)[:,1]
+        pred = (prob >= 0.5).astype(np.int32)
+        auc = roc_auc_score(y,prob) if len(np.unique(y)) > 1 else float ("nan")
+        prec = precision_score(y, pred, zero_division=0)
+        recall = recall_score(y, pred, zero_division=0)
+        f1 = f1_score(y, pred, zero_division=0)
+        print(f"{name} metrics \n AUROC: {auc} \n Precision: {prec} \n Recall: {recall} \n F1-Score: {f1}")
+
+    
+    report("Train", x_tr_scaled, y_tr)
+    report("Test", x_test_scaled, y_test)
+    print("Val", x_val_scaled, y_val)
 
 def run_epoch(model, loader, criterion, optimizer=None, device=DEVICE):
     print("Training", model,"...")
@@ -134,7 +159,8 @@ def train(
     print(f"{'='*60}\n")
 
     train_loader, val_loader, test_loader, meta = get_dataloaders(batch_size=batch_size)
-
+    age_baseline(train_loader, val_loader, test_loader)
+    
     if model_name == "svm":
         return svm_train(train_loader, val_loader, test_loader)
 
