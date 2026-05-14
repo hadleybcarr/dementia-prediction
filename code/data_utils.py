@@ -375,14 +375,18 @@ def get_dataloaders(
         pos_weight = n_neg / max(n_pos, 1.0)
 
         meta = {
-            "seq_len":         SEQ_LEN,
-            "n_vitals":        TOTAL_CHANNELS,   
-            "n_vital_signals": N_VITALS,
-            "vital_names":     list(VITAL_ITEM_IDS.values()),
-            "pos_weight":      pos_weight,
-            "n_train":         len(idx_train),
-            "n_val":           len(idx_val),
-            "n_test":          len(idx_test),
+            "seq_len":          SEQ_LEN,
+            "n_vitals":         TOTAL_CHANNELS,
+            "n_vital_signals":  N_VITALS,
+            "vital_names":      list(VITAL_ITEM_IDS.values()),
+            "vital_bounds":     {k: list(v) for k, v in VITAL_BOUNDS.items()},   # NEW
+            "age_bounds":       list(AGE_BOUNDS),                                # NEW
+            "use_mask_channels": USE_MASK_CHANNELS,                              # NEW
+            "channel_order":    list(VITAL_ITEM_IDS.values()) + ["age", "sex"],  # NEW — explicit
+            "pos_weight":       pos_weight,
+            "n_train":          len(idx_train),
+            "n_val":            len(idx_val),
+            "n_test":           len(idx_test),
         }
 
         x      = torch.tensor(x_arr,      dtype=torch.float32)

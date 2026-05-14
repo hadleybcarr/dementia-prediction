@@ -19,53 +19,49 @@ const API_URL =
 
 const DEFAULT_VITALS = {
   restingHR: "—",
-  hrv:       "—",
   spo2:      "—",
   bodyTemp:  "—",
   respRate:  "—",
 };
 
-const DEFAULT_RISKS = {
-  CNN: 0.78,
-  LSTM: 0.72,
-  Transformer: 0.81,
-  SVM: 0.65,
-};
-
-const DEFAULT_CONFIDENCE = {
-  CNN: 0.92,
-  LSTM: 0.88,
-  Transformer: 0.94,
-  SVM: 0.79,
-};
-
 const VITAL_DEFS = [
   { key: "restingHR", label: "Resting Heart Rate",     unit: "bpm"  },
-  { key: "hrv",       label: "Heart Rate Variability", unit: "ms"   },
+  { key: "temperature", label: "Temperature", unit: "degrees"},
   { key: "spo2",      label: "Blood Oxygen",           unit: "%"    },
   { key: "respRate",  label: "Respiratory Rate",       unit: "/min" },
 ];
 
-const ARCHITECTURES = ["CNN", "LSTM", "Transformer", "SVM"];
+const MODEL_DISPLAY = {
+  cnn: "CNN",
+  transformer: "Transformer",
+  bilstm: "Bi-LSTM",
+  ensemble: "Combined",
+};
+
 
 export default function VitalsDashboard() {
-  const [data,    setData]    = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
-  const [arch,    setArch]    = useState("CNN");
+  const [data,       setData]       = useState(null);
+  const [prediction, setPrediction] = useState(null);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState(null);
+  const [arch,       setArch]       = useState(null);   // start unset; chosen after first load
 
-  // ── fetch /api/vitals on mount + every 5 minutes ────────────────────────
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
       try {
         setLoading(true);
-        const res = await fetch(`${API_URL}/api/vitals`, { cache: "no-store" });
-        if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
-        const json = await res.json();
+        const [vRes, pRes] = await Promise.all([
+          fetch(`${API_URL}/api/vitals`,  { cache: "no-store" }),
+          fetch(`${API_URL}/api/predict`, { cache: "no-store" }),
+        ]);
+        if (!vRes.ok) throw new Error(`vitals HTTP ${vRes.status}`);
+        const vJson = await vRes.json();
+        const pJson = pRes.ok ? await pRes.json() : null;   
         if (!cancelled) {
-          setData(json);
+          setData(vJson);
+          setPrediction(pJson);
           setError(null);
         }
       } catch (e) {
@@ -80,25 +76,37 @@ export default function VitalsDashboard() {
     return () => { cancelled = true; clearInterval(id); };
   }, []);
 
-  // ── pick live values when available, else placeholders ──────────────────
+
+  const perModel = prediction?.per_model ?? [];          
+  const ensemble = prediction?.ensemble_risk ?? null;
+
+  const archOptions = useMemo(() => {
+    const opts = perModel.map(m => m.model);
+    return ensemble != null ? ["ensemble", ...opts] : opts;
+  }, [perModel.map(m => m.model).join(","), ensemble != null]);
+
+
+  useEffect(() => {
+    if (!arch && archOptions.length) setArch(archOptions[0]);
+  }, [archOptions, arch]);
+
+
+  const score = arch === "ensemble"
+    ? (ensemble ?? 0)
+    : (perModel.find(m => m.model === arch)?.risk ?? 0);
+  const conf = Math.abs(2 * score - 1);
+
+  const series = data?.hr_series ?? [];
+  const hrVals = series.filter(v => v != null);
+  const restingHr = hrVals.length ? Math.round(Math.min(...hrVals)) : null;
+
   const vitals = {
-    restingHR: data?.vitals?.restingHR ?? DEFAULT_VITALS.restingHR,
-    hrv:       data?.vitals?.hrv       ?? DEFAULT_VITALS.hrv,
-    spo2:      data?.vitals?.spo2      ?? DEFAULT_VITALS.spo2,
-    bodyTemp:  data?.vitals?.bodyTemp  ?? DEFAULT_VITALS.bodyTemp,
-    respRate:  data?.vitals?.respRate  ?? DEFAULT_VITALS.respRate,
+    restingHR:   restingHr            ?? DEFAULT_VITALS.restingHR,
+    spo2:        data?.spo2           ?? DEFAULT_VITALS.spo2,
+    temperature: data?.temperature    ?? DEFAULT_VITALS.bodyTemp,
+    respRate:    data?.resp_rate      ?? DEFAULT_VITALS.respRate,
   };
-  const riskScores = data?.riskScores ?? DEFAULT_RISKS;
-  const confidence = data?.confidence ?? DEFAULT_CONFIDENCE;
 
-  const score = riskScores[arch] ?? 0;
-  const conf  = confidence[arch] ?? 0;
-
-  const tier = useMemo(() => {
-    if (score < 0.4) return "Low";
-    if (score < 0.7) return "Moderate";
-    return "Elevated";
-  }, [score]);
 
   return (
     <div className="vd-root">
@@ -106,12 +114,13 @@ export default function VitalsDashboard() {
 
       <div className="vd-shell">
         <h1 className="vd-title">
-          <em>D</em>ementia&nbsp;<em>R</em>isk
+          Dementia&nbsp;Risk
         </h1>
 
         <p className="vd-subtitle vd-subtitle--center">
           The models below were trained on data from the MIMIC dataset. The
-          dataset tends to skew towards older patients.
+          dataset tends to skew towards older patients. Risk is relative to the patients in the dataset and you should consult a clinician 
+          for an additional opinion. 
         </p>
 
         {/* status line — only shown if loading or errored */}
@@ -124,24 +133,26 @@ export default function VitalsDashboard() {
           </p>
         )}
 
-        <RiskHero score={score} tier={tier} />
+        <RiskHero score={score}/>
 
         <div className="vd-meta-pill">
-          <Meta icon="model"      label={arch} />
+          <Meta icon="model" label={MODEL_DISPLAY[arch] ?? arch ?? "—"} />
           <Meta icon="confidence" label={`${Math.round(conf * 100)}% confidence`} />
-          <Meta icon="tier"       label={`${tier} tier`} />
         </div>
 
         <div className="vd-arch-row">
           <span className="vd-arch-leader">— Model —</span>
-          {ARCHITECTURES.map((a) => (
+          {archOptions.length === 0 && (
+            <span className="vd-arch-leader">no models loaded</span>
+          )}
+          {archOptions.map((key) => (
             <button
-              key={a}
+              key={key}
               type="button"
-              onClick={() => setArch(a)}
-              className={`vd-arch ${arch === a ? "vd-arch--active" : ""}`}
+              onClick={() => setArch(key)}
+              className={`vd-arch ${arch === key ? "vd-arch--active" : ""}`}
             >
-              {a}
+              {MODEL_DISPLAY[key] ?? key}
             </button>
           ))}
         </div>
@@ -165,13 +176,11 @@ export default function VitalsDashboard() {
         </p>
       </div>
     </div>
+    
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Hero                                                                */
-/* ------------------------------------------------------------------ */
-function RiskHero({ score, tier }) {
+function RiskHero({ score }) {
   const W = 880, H = 460;
   const CX = W / 2, CY = H / 2;
   const R = 168, RING_R = R + 18;
@@ -186,7 +195,7 @@ function RiskHero({ score, tier }) {
         className="vd-hero-svg"
         preserveAspectRatio="xMidYMid meet"
         role="img"
-        aria-label={`Dementia risk score ${score.toFixed(2)}, ${tier} tier`}
+        aria-label={`Dementia risk score ${score.toFixed(2)}`}
       >
         <defs>
           <radialGradient id="vd-disc" cx="50%" cy="38%" r="68%">
@@ -293,7 +302,6 @@ function Meta({ icon, label }) {
     confidence: (
       <path d="M7 1.7 L8.5 5 L12.2 5.5 L9.5 8 L10.2 11.6 L7 9.8 L3.8 11.6 L4.5 8 L1.8 5.5 L5.5 5 Z" />
     ),
-    tier: <path d="M2 11 L5 7 L8 9 L12 3" />,
   };
   return (
     <span className="vd-meta">
@@ -305,16 +313,14 @@ function Meta({ icon, label }) {
   );
 }
 
-/* ================================================================== */
-/* Styles                                                              */
-/* ================================================================== */
+
 const styleSheet = `
   @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Inter:wght@400;500;600&display=swap');
 
   .vd-root {
-    --cream-bg:    #EFEAE0;
+    --cream-bg:    #ffffff;
     --cream-card:  rgba(253, 250, 242, 0.55);
-    --cream-solid: #F8F4E9;
+    --cream-solid: #ffffff;
     --ink:         #0E2240;
     --ink-soft:    #3D506E;
     --ink-mute:    #7C8FA8;
@@ -332,18 +338,11 @@ const styleSheet = `
       var(--cream-bg);
     color: var(--ink);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    min-height: 100vh;
-    width: 100%;
-    padding: 56px 24px 80px;
     box-sizing: border-box;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
 
-  .vd-shell {
-    max-width: 1080px;
-    margin: 0 auto;
-  }
 
   .vd-title {
     font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
@@ -394,7 +393,6 @@ const styleSheet = `
   .vd-hero-svg {
     width: 100%;
     height: auto;
-    max-width: 880px;
   }
 
   .vd-meta-pill {
@@ -557,6 +555,18 @@ const styleSheet = `
     font-size: 13px;
     color: var(--ink-soft);
     line-height: 1.4;
+  }
+
+  .vd-root {
+  min-height: 100vh;
+  width: 100%;
+  padding: 56px 4vw;
+  box-sizing: border-box;
+}
+
+  .vd-shell {
+  width: 100%;
+  margin: 0 auto;
   }
 
   .vd-footnote {

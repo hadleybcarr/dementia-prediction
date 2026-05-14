@@ -307,7 +307,7 @@ def run_shap_analysis(model, train_loader, test_loader, meta,
                       model_name, n_background: int=100, n_explain: int=200, out_path: str=None,device=DEVICE,):
     
     model = model.to(device).eval()
-    vital_names = meta.get("vital_names", ["heart_rate", "sbp", "dbp", "spo2", "resp_rate"])
+    vital_names = meta.get("vital_names")
     n_v = meta["n_vital_signals"]
     channel_names = (
         list(vital_names)
