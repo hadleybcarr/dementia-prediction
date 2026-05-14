@@ -77,9 +77,9 @@ def run_epoch(model, loader, criterion, optimizer=None, device=DEVICE):
     all_probs  = np.concatenate(all_probs)
     all_labels = np.concatenate(all_labels)
     auc = roc_auc_score(all_labels, all_probs) if len(np.unique(all_labels)) > 1 else float("nan")
-    precision = precision_score(all_labels, all_probs, zero_division=0)
-    recall = recall_score(all_labels, all_probs, zero_division=0)
-    f1 = f1_score(all_labels, all_probs, zero_division=0)
+    precision = precision_score(all_labels.astype(np.int32), all_probs.astype(np.int32), zero_division=0)
+    recall = recall_score(all_labels.astype(np.int32), all_probs.astype(np.int32), zero_division=0)
+    f1 = f1_score(all_labels.astype(np.int32), all_probs.astype(np.int32), zero_division=0)
 
     print(f"AUC is {auc} \n Precision is {precision} \n Recall is {recall} \n F1-Score is {f1}")
     return avg_loss, accuracy, auc, precision, recall, f1
