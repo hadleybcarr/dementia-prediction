@@ -196,7 +196,8 @@ def train(
         with open("history.json", "w") as f:
             json.dump(history, f, indent=2)
 
-    history[model_name] = {}
+    history[model_name] = {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": [], "train_auc": [], "train_precision": [], "t_recall": [], "train_f1": []}
+    
     best_val_auc = -float('inf')
     patience_counter = 0
     swa_model = AveragedModel(model)
