@@ -51,7 +51,7 @@ class DementiaBiLSTM(nn.Module):
 
     def __init__(
         self,
-        n_vitals:    int = 6,
+        n_vitals:    int = 4,
         hidden_dim:  int = 128,
         n_layers:    int = 3,
         dropout:     float = 0.3,
@@ -59,7 +59,7 @@ class DementiaBiLSTM(nn.Module):
         super().__init__()
         self.hidden_dim = hidden_dim
         self.n_layers   = n_layers
-        self.n_temporal = 6
+        self.n_temporal = 4
 
         self.input_proj = nn.Sequential(
             nn.Linear(self.n_temporal, hidden_dim),

@@ -57,11 +57,11 @@ CHARTEVENTS_PATH = os.path.join(ICU_PATH,  "chartevents.csv")
 
 # ── Config ────────────────────────────────────────────────────────────────────
 SEQ_LEN          = 24        # hourly time steps per patient
-N_VITALS  = 6       # raw vital sign channels
+N_VITALS  = 4       # raw vital sign channels
 N_DEMO_CHANNELS  = 2         # age + sex
 USE_MASK_CHANNELS = False
 TOTAL_CHANNELS   = N_VITALS + (N_VITALS if USE_MASK_CHANNELS else 0) + N_DEMO_CHANNELS  # vitals + mask + demo = 14
-MIN_VITALS_PER_HOUR = 5
+MIN_VITALS_PER_HOUR = 3
 CHUNK_SIZE       = 500_000
 SEED             = 42
 
@@ -73,8 +73,8 @@ DEMENTIA_CODES = ("F01", "F02", "F03")
 
 VITAL_ITEM_IDS = {
     220045: "heart_rate",
-    220179: "sbp",
-    220180: "dbp",
+    #220179: "sbp",
+    #220180: "dbp",
     220277: "spo2",
     220210: "resp_rate",
     223761: "temperature",
@@ -83,8 +83,8 @@ VITAL_ITEM_IDS = {
 # Clip then min-max scale to [0, 1]
 VITAL_BOUNDS = {
     "heart_rate":  (20,  250),
-    "sbp":         (50,  250),
-    "dbp":         (20,  180), 
+    #"sbp":         (50,  250),
+    #"dbp":         (20,  180), 
     "spo2":        (50,  100),
     "resp_rate":   (4,   60),
     "temperature": (97.8, 99.1),

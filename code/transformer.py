@@ -89,7 +89,7 @@ class DementiaTransformer(nn.Module):
     """
 
     def __init__(self,
-        n_vitals:int = 5,n_demo: int=2,d_model:int = 96,n_heads:int = 8,n_features=8,
+        n_vitals:int = 5,n_demo: int=2,d_model:int = 96,n_heads:int = 8,n_features=6,
         n_layers:int = 3,dim_ff:int = 256,dropout:float = 0.2,seq_len:int = 24
     ):
         super().__init__()
