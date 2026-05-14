@@ -71,7 +71,7 @@ def age_baseline(train_loader, val_loader, test_loader, n_static:int=2, static_n
     
     report("Train", x_tr_scaled, y_tr)
     report("Test", x_test_scaled, y_test)
-    print("Val", x_val_scaled, y_val)
+    report("Val", x_val_scaled, y_val)
 
 def run_epoch(model, loader, criterion, optimizer=None, device=DEVICE):
     print("Training", model,"...")
