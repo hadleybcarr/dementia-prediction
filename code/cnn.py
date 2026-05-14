@@ -62,7 +62,7 @@ class DementiaCNN(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x: (B, T, 14)
-        temporal = x[:, :, :self.n_temporal]
+        temporal = x[:, :, :self.n_temporal].permute(0, 2, 1) 
         demo     = x[:, 0, self.n_temporal:]                    # (B, 2) — same at every t
         h = self.stem(temporal)
         h = self.blocks(h)
