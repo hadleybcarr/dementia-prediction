@@ -99,7 +99,7 @@ class DementiaTransformer(nn.Module):
         self.n_temporal = n_features - n_demo
 
         self.input_proj = nn.Sequential(
-            nn.Linear(n_vitals, d_model),
+            nn.Linear(self.n_temporal, d_model),
             nn.LayerNorm(d_model),
         )
 
@@ -153,15 +153,14 @@ class DementiaTransformer(nn.Module):
         demo     = vitals[:, 0, self.n_temporal:] 
 
         x = self.input_proj(temporal)                       # (B, T, d_model)
-        cls = self.cls_token.expand(temporal, -1, -1)        # (B, 1, d_model)
+        cls = self.cls_token.expand(x.size(0), -1, -1)       # (B, 1, d_model)
         x   = torch.cat([cls, x], dim=1)                  # (B, T+1, d_model)
         x = self.pos_enc(x)
         x = self.encoder(x)                               # (B, T+1, d_model)
         cls_out = x[:, 0, :]                              # (B, d_model)
         logits   = self.classifier(cls_out).squeeze(-1)  # (B,)
-        pooled = logits.mean(axis=-1)
         d_logits = self.demo_mlp(demo)
-        out = self.head(torch.cat([pooled, d_logits], dim=-1))
+        out = self.head(torch.cat([logits, d_logits], dim=-1))
         return out.squeeze(-1)
 
 
