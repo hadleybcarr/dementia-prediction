@@ -44,6 +44,7 @@ class DementiaCNN(nn.Module):
         self.demo_mlp = nn.Sequential(
             nn.Linear(n_demo, demo_dim), 
             nn.GELU(),
+            nn.Dropout(0.3),
             nn.Linear(demo_dim, demo_dim)
         )
 

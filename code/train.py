@@ -55,7 +55,7 @@ def age_baseline(train_loader, val_loader, test_loader, n_static:int=2, static_n
     x_test, y_test = extract(train_loader)
 
     scaler = StandardScaler().fit(x_tr)
-    x_tr_scaled, x_val_scaled, x_test_scaled = scaler.transform(x_tr), scaler.transfrom(x_val), scaler.transform(x_test)
+    x_tr_scaled, x_val_scaled, x_test_scaled = scaler.transform(x_tr), scaler.transform(x_val), scaler.transform(x_test)
     clf = LogisticRegression(class_weight="balanced", max_iter=1000)
     clf.fit(x_tr_scaled, y_tr)
 
@@ -160,7 +160,7 @@ def train(
 
     train_loader, val_loader, test_loader, meta = get_dataloaders(batch_size=batch_size)
     age_baseline(train_loader, val_loader, test_loader)
-    
+
     if model_name == "svm":
         return svm_train(train_loader, val_loader, test_loader)
 
